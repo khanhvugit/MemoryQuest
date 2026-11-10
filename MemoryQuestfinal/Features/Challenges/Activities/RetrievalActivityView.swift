@@ -43,7 +43,11 @@ struct FlashcardActivityView: View {
                     Text(model.flipped ? model.deck[model.index].concept.def : model.deck[model.index].concept.term).font(.title2).frame(maxWidth:.infinity).padding(.vertical,40)
                     Text(model.flipped ? "Compare with the definition you recalled." : "Explain it to yourself, then tap to flip.").font(.caption).foregroundStyle(AppTheme.muted)
                 }
-            }.buttonStyle(.plain).accessibilityLabel(model.flipped ? "Definition shown" : "Flip card to reveal definition")
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(model.flipped ? "Definition shown" : "Flashcard: \(model.deck[model.index].concept.term)")
+            .accessibilityValue(model.flipped ? model.deck[model.index].concept.def : "")
+            .accessibilityHint(model.flipped ? "Compare with the definition you recalled." : "Recall the definition, then double tap to reveal it.")
             if model.flipped { HStack { QuestButton(title:"Need practice",secondary:true) { model.selfRate(false) }; QuestButton(title:"I recalled it") { model.selfRate(true) } } }
             Text("Self-assessment · Be honest about the key idea.").font(.caption).foregroundStyle(AppTheme.muted)
         }

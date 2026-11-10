@@ -9,10 +9,10 @@ struct CityView: View {
         QuestPage {
             HStack { PageTitle(text:"My City"); Spacer(); Button { app.path.append(.settings) } label: { Image(systemName:"slider.horizontal.3") }.accessibilityLabel("Settings") }
             Text(preview ? "Completed city preview · Your progress is unchanged." : "\(built.count) buildings. Every one tells a learning story.").font(.subheadline).foregroundStyle(AppTheme.muted)
-            CityIllustration(buildings:built) { app.path.append(.building($0)) }
+            CityIllustration(buildings:built) { app.path.append(.building($0, preview:preview)) }
             ProgressView(value:Double(built.count),total:10)
             Text("Tap a building or an empty plot to explore.").font(.caption).foregroundStyle(AppTheme.muted)
-            if preview { QuestButton(title:"Return to my real city",secondary:true) { app.path.removeLast(); app.path.append(.city(false)) } }
+            if preview { QuestButton(title:"Return to my real city",secondary:true) { guard app.path.last == .city(true) else { return }; app.path[app.path.count - 1] = .city(false) } }
             if built.count == 10 && !preview {
                 QuestCard { Text("Look how far you’ve come!").font(.title2.bold()); Text("Every building represents a challenge you completed and a memory strategy you practised."); QuestButton(title:"See my learning journey") { app.navigate(.progress) } }
             }
@@ -21,7 +21,7 @@ struct CityView: View {
                 QuestCard { Text("Your Library starts with Word Flash.").font(.headline); Text("Learn active recall, complete the challenge, and watch your first building appear.").font(.subheadline); QuestButton(title:"Start the first lesson") { app.path.append(.lesson(0)) } }
             }
             ForEach(ContentRepository.challenges.filter { built.contains($0.id) }) { c in
-                Button { app.path.append(.building(c.id)) } label: {
+                Button { app.path.append(.building(c.id, preview:preview)) } label: {
                     QuestCard { HStack { BuildingArt(id:c.id).frame(width:70,height:75); VStack(alignment:.leading,spacing:6) { Text(c.building).font(.headline); Text(c.title).font(.subheadline).foregroundStyle(AppTheme.muted); if preview { Text("Completed city preview").font(.caption) } }; Spacer(); Image(systemName:"chevron.right") } }
                 }.buttonStyle(.plain)
             }

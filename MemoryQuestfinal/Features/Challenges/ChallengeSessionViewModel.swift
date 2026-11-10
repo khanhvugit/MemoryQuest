@@ -44,18 +44,27 @@ struct ReviewConcept {
             let ranked=terms.enumerated().map { i,t -> ReviewConcept in
                 let prior=relevant.flatMap { attempt in attempt.results.filter { $0.conceptID == t.id }.map { ($0,attempt.date) } }.last
                 return ReviewConcept(concept:t,lastSeen:prior?.1,missed:prior.map { !$0.0.correct } ?? [3,4,2,1].contains(i))
-            }.sorted { a,b in a.missed != b.missed ? a.missed : (a.lastSeen ?? .distantPast) < (b.lastSeen ?? .distantPast) }
+            }.sorted { a, b in
+                // Genuine learning history takes precedence over sample filler.
+                if a.sample != b.sample { return !a.sample }
+                if a.missed != b.missed { return a.missed }
+                if a.lastSeen != b.lastSeen { return (a.lastSeen ?? .distantPast) < (b.lastSeen ?? .distantPast) }
+                return a.concept.id < b.concept.id
+            }
             deck=Array(ranked.prefix(id == 7 ? 4 : (difficulty == .hard ? 6 : 4)))
         }
     }
     var total: Int { stage == "groupRecall" ? 3 : id == 5 ? content.links.count : id == 8 ? content.robots.count : id == 9 ? content.detectives.count : deck.count }
-    var canCheck: Bool { id == 9 ? choice >= 0 : !answer.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty }
+    var canCheck: Bool {
+        guard !finished, stage != "study", index >= 0, index < total else { return false }
+        return id == 9 ? content.detectives[index].opts.indices.contains(choice) : !answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
     func record(_ term: String, answer: String, expected: String, correct: Bool, explanation: String = "", delayed: Bool = false, sample: Bool = false) {
         results.append(QuestionResult(conceptID:Answer.normalise(term),term:term,answer:answer,expected:expected,explanation:explanation,correct:correct,delayed:delayed,sample:sample))
     }
-    func beginRecall() { stage="play"; index=0; feedback=nil; validation=nil; answer=""; groups=[:] }
+    func beginRecall() { guard stage == "study", !finished else { return }; stage="play"; index=0; feedback=nil; validation=nil; answer=""; groups=[:] }
     func checkGroups() {
-        guard feedback == nil else { return }
+        guard stage == "study", !finished, feedback == nil else { return }
         guard groups.count == 9, groups.values.allSatisfy({ (0..<3).contains($0) }) else { validation="Choose a category for every term, then check your groups."; return }
         var count=0
         for i in 0..<9 {
@@ -67,9 +76,9 @@ struct ReviewConcept {
         feedback="\(count)/9 grouped correctly.\n\n" + (0..<3).map { content.categories[$0]+": "+content.groups[$0].joined(separator:", ") }.joined(separator:"\n\n") + "\n\nUse the group labels as cues. Next, the list will be hidden."
         validation=nil
     }
-    func groupRecall() { stage="groupRecall"; feedback=nil; answer=""; index=0; groups=[:] }
+    func groupRecall() { guard stage == "study", feedback != nil, !finished else { return }; stage="groupRecall"; feedback=nil; answer=""; index=0; groups=[:] }
     func checkLinks() {
-        guard feedback == nil else { return }
+        guard stage == "study", !finished, feedback == nil else { return }
         guard groups.count == content.links.count, groups.values.allSatisfy({ (0..<content.links.count).contains($0) }) else { validation="Select an analogy for every concept."; return }
         var count=0
         for i in content.links.indices {
@@ -82,6 +91,7 @@ struct ReviewConcept {
         validation=nil
     }
     func hideStory() {
+        guard stage == "study", !finished else { return }
         let missing=content.storyTerms.filter { !Answer.contains(story,term:$0) }
         guard story.trimmingCharacters(in:.whitespacesAndNewlines).count >= 30, missing.isEmpty else {
             validation="Build a short story using all four terms. Still needed: \(missing.joined(separator:", "))."; return
@@ -89,13 +99,13 @@ struct ReviewConcept {
         beginRecall()
     }
     func checkSequence() {
-        guard order.count == 6, feedback == nil else { return }
+        guard !finished, stage == "play", order.count == 6, Set(order).count == 6, order.allSatisfy({ content.sequence.indices.contains($0) }), feedback == nil else { return }
         for (position,selection) in order.enumerated() { record("Operation \(position+1)",answer:content.sequence[selection],expected:content.sequence[position],correct:position == selection,explanation:content.chunks.joined(separator:" → ")) }
         feedbackCorrect=order == Array(0..<6)
         feedback="\(zip(order,0..<6).filter { $0 == $1 }.count)/6 operations in position.\n\n"+content.sequence.joined(separator:" → ")+"\n\n"+content.chunks.joined(separator:" → ")
     }
     func selfRate(_ correct: Bool) {
-        guard flipped else { return }
+        guard id == 1, !finished, flipped, deck.indices.contains(index) else { return }
         let concept=deck[index].concept
         record(concept.term,answer:correct ? "Recalled (self-rated)" : "Needed review (self-rated)",expected:concept.def,correct:correct)
         advance()
@@ -142,6 +152,7 @@ struct ReviewConcept {
         }
     }
     func advance() {
+        guard !finished, stage != "study", feedback != nil || (id == 1 && flipped) else { return }
         if [3,4].contains(id) { finished=true; return }
         index += 1; feedback=nil; answer=""; choice = -1; hint=false; flipped=false
         if index >= total {

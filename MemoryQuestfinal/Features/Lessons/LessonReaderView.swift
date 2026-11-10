@@ -20,7 +20,7 @@ struct LessonReaderView: View {
             HStack {
                 if model.step > 0 { QuestButton(title:"Previous",secondary:true) { move(model.step-1) } }
                 QuestButton(title:model.step == 4 ? "Complete lesson" : "Next",disabled:model.step == 3 && !model.passed) {
-                    if model.step == 4 { store.progress.completedLessons.insert(id); store.progress.lessonSteps[id] = 0; store.save(); app.path.removeLast(); app.path.append(.lessonComplete(id)) }
+                    if model.step == 4 { guard app.path.last == .reader(id) else { return }; store.progress.completedLessons.insert(id); store.progress.lessonSteps[id] = 0; store.save(); app.path[app.path.count - 1] = .lessonComplete(id) }
                     else { move(model.step+1) }
                 }
             }.padding(.top,12)

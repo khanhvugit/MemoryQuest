@@ -60,8 +60,22 @@ struct AnswerField: View {
     @Binding var text: String
     var prompt = "Your answer"
     var multiline = false
+    @FocusState private var focused: Bool
+    @Environment(\.isEnabled) private var enabled
     var body: some View {
         TextField(prompt, text: $text, axis: multiline ? .vertical : .horizontal).lineLimit(multiline ? 4...8 : 1...1)
+            .focused($focused)
+            .submitLabel(multiline ? .return : .done)
+            .onSubmit { if !multiline { focused = false } }
+            .onChange(of: enabled) { if !enabled { focused = false } }
+            .toolbar {
+                if focused {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { focused = false }
+                    }
+                }
+            }
             .textInputAutocapitalization(.never).autocorrectionDisabled().padding(14)
             .background(.white, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.line))
     }

@@ -18,7 +18,7 @@ struct HomeView: View {
             QuestCard {
                 Text("Lesson \((nextChallenge?.l ?? nextLesson.id)+1) · \(nextChallenge == nil ? "4–6 min" : "Challenge ready")").font(.caption).foregroundStyle(AppTheme.muted)
                 Text(nextChallenge?.title ?? nextLesson.short).font(.title2.bold())
-                Text(nextChallenge?.desc ?? nextLesson.desc).font(.subheadline).foregroundStyle(AppTheme.muted)
+                Text((nextChallenge?.desc ?? nextLesson.desc).replacingOccurrences(of:"CS", with:store.progress.subject == .biology ? "Biology" : "CS")).font(.subheadline).foregroundStyle(AppTheme.muted)
                 QuestButton(title:store.progress.buildings.count == 10 ? "Review my learning" : "Continue Learning") {
                     if store.progress.buildings.count == 10 { app.navigate(.progress) }
                     else if let challenge = nextChallenge { app.path.append(.challenge(challenge.id)) }
@@ -28,7 +28,7 @@ struct HomeView: View {
             Text("Recent achievements").font(.title3.bold())
             QuestCard {
                 if let attempt = store.progress.attempts.last {
-                    Label("\(ContentRepository.challenges[attempt.challengeID].building) constructed",systemImage:"rosette").font(.headline)
+                    Label(store.attempts(attempt.challengeID).first?.id == attempt.id ? "\(ContentRepository.challenges[attempt.challengeID].building) constructed" : "\(ContentRepository.challenges[attempt.challengeID].title) practised",systemImage:"rosette").font(.headline)
                     Text(attempt.date.formatted(date:.abbreviated,time:.omitted)).font(.caption)
                 } else { Text("Your story starts here."); Text("Complete your first challenge to build the Library.").font(.caption).foregroundStyle(AppTheme.muted) }
             }

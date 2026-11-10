@@ -39,11 +39,14 @@ struct ChallengeSessionView: View {
                         }
                     }
                 }.id("\(model.stage)-\(model.index)-\(model.retried)")
-                    .onChange(of:model.finished) {
-                        if let attempt=model.finish(store:store) { app.path.removeLast(); app.path.append(.result(attempt.id)) }
-                    }
             } else { ProgressView().onAppear { model=ChallengeSessionViewModel(id:id,subject:subject,difficulty:difficulty,history:store.progress.attempts) } }
-        }.navigationTitle(ContentRepository.challenges[id].title)
+        }
+        .navigationTitle(ContentRepository.challenges[id].title)
+        // Keep completion observation outside the question's changing identity.
+        .onChange(of: model?.finished, initial: true) {
+            guard let model, let attempt = model.finish(store: store) else { return }
+            app.showResult(attempt)
+        }
     }
 }
 struct StudyActivityView: View {

@@ -24,7 +24,7 @@ struct RootView: View {
             }
             .toolbarTitleDisplayMode(.inline)
         }
-        if store.progress.welcomed { BottomNavigation(selected: app.tab) { app.navigate($0) } }
+        if store.progress.welcomed { BottomNavigation(selected: app.selectedTab) { app.navigate($0) } }
         }
         .background(AppTheme.background)
         .environment(store).environment(app).tint(AppTheme.coral).foregroundStyle(AppTheme.ink).preferredColorScheme(.light)
@@ -44,7 +44,7 @@ struct DestinationView: View {
                 case .result(let id): ChallengeResultView(attemptID:id)
                 case .reward(let id,let isNew): BuildingRewardView(attemptID:id,isNew:isNew)
                 case .city(let preview): CityView(preview:preview)
-                case .building(let id): BuildingDetailView(id:id)
+                case .building(let id, let preview): BuildingDetailView(id:id, preview:preview)
                 case .history(let id): AttemptHistoryView(challengeID:id)
                 case .settings: SettingsView()
                 }
