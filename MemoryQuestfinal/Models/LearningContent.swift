@@ -8,6 +8,13 @@ enum Subject: String, Codable, CaseIterable, Identifiable {
 enum Difficulty: String, Codable, CaseIterable, Identifiable {
     case easy = "Easy", medium = "Medium", hard = "Hard"
     var id: String { rawValue }
+    var questionCount: Int {
+        switch self {
+        case .easy: 5
+        case .medium: 10
+        case .hard: 12
+        }
+    }
 }
 struct Lesson: Codable, Identifiable {
     let id: Int

@@ -20,7 +20,7 @@ struct LessonListView: View {
             }
             .padding(.horizontal, 22)
             .padding(.top, 28)
-            .padding(.bottom, 20)
+            .padding(.bottom, 96)
             .frame(maxWidth: 600)
             .frame(maxWidth: .infinity)
         }
@@ -69,10 +69,11 @@ private enum LessonPresentation {
 
     static func symbol(for lesson: Lesson) -> String {
         switch lesson.id {
-        case 0: "rectangle.portrait.and.arrow.forward"
-        case 1: "line.3.horizontal"
-        case 2: "circle.hexagongrid"
-        default: "photo"
+        case 0: "brain.head.profile"
+        case 1: "square.grid.2x2"
+        case 2: "link"
+        case 3: "clock.arrow.circlepath"
+        default: "bubble.left.and.bubble.right"
         }
     }
 
@@ -88,10 +89,10 @@ private enum LessonPresentation {
 
     static func foreground(for lesson: Lesson) -> Color {
         switch lesson.id {
-        case 0: .black
+        case 0: Color(hex: "9f32c0")
         case 1: Color(hex: "457d2e")
         case 2: Color(hex: "003cc5")
-        case 3: .red
+        case 3: AppTheme.coral
         default: Color(hex: "ce8d00")
         }
     }
@@ -102,43 +103,13 @@ struct LessonIcon: View {
     var size: CGFloat = 90
 
     var body: some View {
-        Group {
-            if lesson.id == 0 {
-                RecallIcon()
-                    .stroke(.black, style: StrokeStyle(lineWidth: size * 0.022, lineCap: .round, lineJoin: .round))
-                    .frame(width: size * 0.42, height: size * 0.42)
-            } else {
-                Image(systemName: LessonPresentation.symbol(for: lesson))
-                    .font(.system(size: size * 0.42, weight: .light))
-                    .foregroundStyle(LessonPresentation.foreground(for: lesson))
-            }
-        }
+        Image(systemName: LessonPresentation.symbol(for: lesson))
+            .font(.system(size: size * 0.42, weight: .light))
+            .symbolRenderingMode(.monochrome)
+            .foregroundStyle(LessonPresentation.foreground(for: lesson))
         .frame(width: size, height: size)
         .background(LessonPresentation.background(for: lesson), in: RoundedRectangle(cornerRadius: 9))
         .accessibilityHidden(true)
-    }
-}
-
-// The open card and question mark share the same proportions at both icon sizes.
-private struct RecallIcon: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
-        }
-        path.move(to: point(0.48, 0.9))
-        path.addLine(to: point(0.2, 0.9))
-        path.addQuadCurve(to: point(0.08, 0.78), control: point(0.08, 0.9))
-        path.addLine(to: point(0.08, 0.2))
-        path.addQuadCurve(to: point(0.2, 0.08), control: point(0.08, 0.08))
-        path.addLine(to: point(0.68, 0.08))
-        path.addQuadCurve(to: point(0.8, 0.2), control: point(0.8, 0.08))
-        path.addLine(to: point(0.8, 0.38))
-        path.move(to: point(0.58, 0.62))
-        path.addCurve(to: point(0.71, 0.76), control1: point(0.58, 0.41), control2: point(0.99, 0.51))
-        path.move(to: point(0.7, 0.9))
-        path.addLine(to: point(0.7, 0.905))
-        return path
     }
 }
 
@@ -216,17 +187,56 @@ private struct LessonOutline: View {
     }
 }
 
-private struct LessonSubjectMenu: View {
+struct LessonSubjectMenu: View {
     @Environment(ProgressStore.self) private var store
 
     var body: some View {
         @Bindable var store = store
-        Picker("Example subject", selection: $store.progress.subject) {
-            ForEach(Subject.allCases) { Text($0.title).tag($0) }
+        Menu {
+            Picker("Subject", selection: $store.progress.subject) {
+                ForEach(Subject.allCases) { Text($0.title).tag($0) }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(store.progress.subject.title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+            }
+            .font(.subheadline)
+            .foregroundStyle(AppTheme.ink)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .font(.subheadline)
-        .pickerStyle(.menu)
-        .tint(AppTheme.ink)
+        .accessibilityLabel("Subject")
+        .accessibilityValue(store.progress.subject.title)
         .onChange(of: store.progress.subject) { store.save() }
     }
 }
+
+#if DEBUG
+#Preview("LessonListView") {
+    PreviewScreen() { LessonListView() }
+}
+
+#Preview("LessonListCard") {
+    PreviewScreen() { LessonListCard(lesson: ContentRepository.lessons[0]) }
+}
+
+#Preview("LessonIcon") {
+    PreviewScreen() { LessonIcon(lesson: ContentRepository.lessons[0]) }
+}
+
+#Preview("LessonIntroView") {
+    PreviewScreen() { LessonIntroView(id: 0) }
+}
+
+#Preview("LessonOutline") {
+    PreviewScreen() { LessonOutline(lesson: ContentRepository.lessons[0]) }
+}
+
+#Preview("LessonSubjectMenu") {
+    PreviewScreen() { LessonSubjectMenu() }
+}
+#endif

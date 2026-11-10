@@ -34,3 +34,9 @@ struct SettingsView: View {
             } message: { Text("Your lesson progress, challenge results, reviews, and buildings will be cleared from this device.") }
     }
 }
+
+#if DEBUG
+#Preview("SettingsView") {
+    PreviewScreen() { SettingsView() }
+}
+#endif

@@ -31,20 +31,29 @@ struct LearningProgressView: View {
     var body: some View {
         let summary=LearningSummary(progress:store.progress)
         QuestPage {
-            PageTitle(text:"Your progress")
-            Text("Every activity leaves something you can see.").font(.subheadline).foregroundStyle(AppTheme.muted)
+            HStack(spacing: 8) {
+                Text("Progress").font(.largeTitle.bold())
+                Spacer(minLength: 0)
+                LessonSubjectMenu()
+            }.padding(.top, 8)
             QuestCard {
-                MetricRow(title:"Your learning journey",value:"\(store.progress.completion)%")
+                HStack {
+                    Text("Your learning journey").font(.title3)
+                    Spacer()
+                    Text("\(store.progress.completion)%").font(.title3.bold())
+                }
                 ProgressView(value:Double(store.progress.completedLessons.count+store.progress.buildings.count),total:15)
                 Text("Completion of 5 lessons and 10 challenges.").font(.caption).foregroundStyle(AppTheme.muted)
             }
-            SubjectPicker()
             LazyVGrid(columns:[GridItem(.flexible()),GridItem(.flexible())],spacing:12) {
                 ProgressMetric(value:"\(store.progress.completedLessons.count)/5",title:"Lessons explored")
                 ProgressMetric(value:"\(store.progress.buildings.count)/10",title:"Buildings constructed")
-                ProgressMetric(value:summary.percentage(summary.results),title:"Scored-check accuracy")
+                ProgressMetric(value:summary.percentage(summary.results),title:"Accuracy")
                 ProgressMetric(value:summary.percentage(summary.delayed),title:"Delayed review recall")
             }
+            if !summary.attempts.isEmpty {
+                DisclosureGroup("Learning details") {
+                    VStack(alignment: .leading, spacing: 20) {
             Text("Completion is shared across subjects. Performance and reviews below are for \(store.progress.subject.title). Self-rated flashcards are excluded from scored accuracy. Checklist coverage uses predefined rules. Delayed recall requires genuine history at least a day earlier; sample history and immediate replays are excluded.").font(.caption).foregroundStyle(AppTheme.muted)
             AttemptComparisonView(attempts:summary.attempts)
             Text("Ideas you can now recall").font(.title3.bold())
@@ -75,12 +84,25 @@ struct LearningProgressView: View {
             }
             QuestButton(title:"Settings",secondary:true) { app.path.append(.settings) }
             Text("These activities show learning performance, not a measure of general memory ability.").font(.caption).foregroundStyle(AppTheme.muted)
+                    }
+                    .padding(.top, 16)
+                }
+            }
         }
     }
 }
 struct ProgressMetric: View {
     let value, title: String
-    var body: some View { QuestCard { Text(value).font(.title.bold()); Text(title).font(.caption).foregroundStyle(AppTheme.muted) } }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(value).font(.largeTitle.bold())
+            Text(title).font(.subheadline).foregroundStyle(AppTheme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
+        .padding(20)
+        .background(Color("CardBackground"), in: RoundedRectangle(cornerRadius: 18))
+    }
 }
 struct AttemptComparisonView: View {
     let attempts: [ChallengeAttempt]
@@ -105,3 +127,17 @@ struct AttemptComparisonView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("LearningProgressView") {
+    PreviewScreen() { LearningProgressView() }
+}
+
+#Preview("ProgressMetric") {
+    PreviewScreen() { ProgressMetric(value: "1/5", title: "Lessons explored") }
+}
+
+#Preview("AttemptComparisonView") {
+    PreviewScreen() { AttemptComparisonView(attempts: [PreviewData.attempt, PreviewData.attempt]) }
+}
+#endif

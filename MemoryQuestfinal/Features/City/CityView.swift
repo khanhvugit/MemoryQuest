@@ -50,3 +50,13 @@ struct BuildingRewardView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("CityView") {
+    PreviewScreen() { CityView(preview: true) }
+}
+
+#Preview("BuildingRewardView") {
+    PreviewScreen(results: true) { BuildingRewardView(attemptID: PreviewData.attempt.id, isNew: true) }
+}
+#endif

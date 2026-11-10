@@ -1,103 +1,396 @@
 import SwiftUI
+import UIKit
 
-private struct ArtShape: Decodable {
-    let kind, fill, stroke, path: String
-    let width, opacity: Double
-    let values, matrix: [Double]
-    func drawing() -> Path {
-        var p = Path()
-        if kind == "polygon" {
-            for i in stride(from: 0, to: values.count - 1, by: 2) {
-                let point = CGPoint(x: values[i], y: values[i+1])
-                if i == 0 { p.move(to: point) } else { p.addLine(to: point) }
-            }
-            p.closeSubpath()
-        } else if kind == "ellipse" || kind == "circle" {
-            p.addEllipse(in: CGRect(x: values[0]-values[2], y: values[1]-values[3], width: values[2]*2, height: values[3]*2))
-        } else {
-            let pattern = "[MLHVZmlhvz]|-?[0-9]*\\.?[0-9]+"
-            let regex = try? NSRegularExpression(pattern: pattern)
-            let ns = path as NSString
-            let tokens = regex?.matches(in: path, range: NSRange(location: 0, length: ns.length)).map { ns.substring(with: $0.range) } ?? []
-            var i = 0, command = "M"; var point = CGPoint.zero
-            while i < tokens.count {
-                if Double(tokens[i]) == nil { command = tokens[i]; i += 1; if command.uppercased() == "Z" { p.closeSubpath(); continue } }
-                guard i < tokens.count, let x = Double(tokens[i]) else { break }
-                let relative = command == command.lowercased()
-                switch command.uppercased() {
-                case "M", "L":
-                    guard i+1 < tokens.count, let y = Double(tokens[i+1]) else { break }
-                    point = CGPoint(x: x + (relative ? point.x : 0), y: y + (relative ? point.y : 0))
-                    if command.uppercased() == "M" { p.move(to: point); command = relative ? "l" : "L" } else { p.addLine(to: point) }; i += 2
-                case "H": point.x = x + (relative ? point.x : 0); p.addLine(to: point); i += 1
-                case "V": point.y = x + (relative ? point.y : 0); p.addLine(to: point); i += 1
-                default: i += 1
-                }
-            }
-        }
-        return p.applying(CGAffineTransform(a: matrix[0], b: matrix[1], c: matrix[2], d: matrix[3], tx: matrix[4], ty: matrix[5]))
-    }
-}
-private enum BuildingGeometry {
-    static let shapes: [[ArtShape]] = (0...10).map { id in
-        guard let url = Bundle.main.url(forResource: id == 10 ? "empty" : "building\(id)", withExtension: "json"), let data = try? Data(contentsOf: url) else { return [] }
-        return (try? JSONDecoder().decode([ArtShape].self, from: data)) ?? []
-    }
-}
 struct BuildingArt: View {
     let id: Int
     var empty = false
+    static let assets = ["building-mid-1", "shop-2", "building-mid-2", "buiding-tall-2", "building-mid-1", "shop-2", "house small-2", "building-tall-1", "building-mid-1", "building-mid-2"]
+
+    // Match the actual asset palette, including buildings reused by different lessons.
+    static func accent(for id: Int) -> Color {
+        switch assets[id] {
+        case "shop-2": Color(hex: "9B47B0")
+        case "building-mid-2": Color(hex: "196780")
+        case "buiding-tall-2": Color(hex: "435E9D")
+        case "building-tall-1": Color(hex: "68A961")
+        case "house small-2": Color(hex: "BEA418")
+        default: Color(hex: "B43E3E")
+        }
+    }
+
     var body: some View {
-        Canvas { context, size in
-            let scale = min(size.width / 160, size.height / 172)
-            context.translateBy(x: (size.width - 160*scale)/2, y: (size.height-172*scale)/2)
-            context.scaleBy(x: scale, y: scale)
-            for shape in BuildingGeometry.shapes[empty ? 10 : id] {
-                var layer = context; layer.opacity = shape.opacity
-                let path = shape.drawing()
-                if shape.fill != "none" { layer.fill(path, with: .color(Color(hex: shape.fill))) }
-                if shape.stroke != "none" { layer.stroke(path, with: .color(Color(hex: shape.stroke)), lineWidth: shape.width) }
-            }
-        }.accessibilityHidden(true)
+        if empty {
+            Image(systemName: "lock.fill").foregroundStyle(AppTheme.muted).accessibilityHidden(true)
+        } else {
+            Image(Self.assets[id]).resizable().scaledToFit().accessibilityHidden(true)
+        }
     }
 }
+
+// The expanded canvas scrolls vertically and horizontally even at the default zoom.
 struct CityIllustration: View {
     let buildings: Set<Int>
     var select: (Int) -> Void = { _ in }
-    private let slots: [(Double, Double)] = [(0,0),(1.3,0),(3.1,0),(4.4,0),(0,1.4),(4.4,1.4),(0,3.4),(1.3,3.4),(3.1,3.4),(4.4,3.4)]
+    private var unlockedPlotIDs: Set<String> { Set(buildings.map { String($0) }) }
     var body: some View {
-        GeometryReader { proxy in
-            let s = proxy.size.width / 600
-            ZStack(alignment: .topLeading) {
-                Canvas { context, _ in
-                    context.scaleBy(x: s, y: s)
-                    func point(_ u: Double, _ v: Double) -> CGPoint { CGPoint(x: 300+(u-v)*44, y: 89+(u+v)*25) }
-                    func polygon(_ u: Double, _ v: Double, _ a: Double, _ b: Double, _ color: String) {
-                        var path = Path(); path.addLines([point(u,v),point(a,v),point(a,b),point(u,b)]); path.closeSubpath(); context.fill(path, with: .color(Color(hex: color)))
-                    }
-                    polygon(-0.8,-0.8,5.4,4.5,"f0f4eb")
-                    polygon(2.05,-0.8,2.85,4.5,"b6b7b1"); polygon(-0.8,2.1,5.4,2.9,"b6b7b1")
-                    polygon(2.13,-0.8,2.77,4.5,"4b4c4c"); polygon(-0.8,2.18,5.4,2.82,"4b4c4c")
-                    for i in stride(from: -0.65, to: 5.1, by: 0.65) {
-                        var path = Path()
-                        if i < 4.2 { path.move(to: point(2.45,min(i,4.2))); path.addLine(to: point(2.45,min(i+0.24,4.45))) }
-                        path.move(to: point(i,2.5)); path.addLine(to: point(i+0.24,2.5)); context.stroke(path, with: .color(Color(hex:"a6a7a2")), lineWidth: 2)
-                    }
-                    let trees: [(Double,Double)] = [(-0.4,0.1),(-0.45,1.35),(0.15,4.08),(1.9,4.13),(4.45,-0.45),(5.05,0.65),(5,3.8),(3.15,-0.4),(-0.35,3.55)]
-                    for (i,t) in trees.enumerated() {
-                        let p=point(t.0,t.1); let h=Double(29+i%3*8)
-                        var path=Path(); path.addLines([CGPoint(x:p.x-11,y:p.y),CGPoint(x:p.x,y:p.y-h),CGPoint(x:p.x+11,y:p.y)]);path.closeSubpath();context.fill(path,with:.color(Color(hex:"bfe7a5")))
-                        var second=Path();second.addLines([CGPoint(x:p.x+7,y:p.y+3),CGPoint(x:p.x+15,y:p.y-h+11),CGPoint(x:p.x+23,y:p.y+3)]);second.closeSubpath();context.fill(second,with:.color(Color(hex:"a9df95")))
-                    }
-                }
-                ForEach(ContentRepository.challenges) { c in
-                    let slot = slots[c.id]
-                    let x = 300+(slot.0-slot.1)*44, y = 89+(slot.0+slot.1)*25
-                    Button { select(c.id) } label: { BuildingArt(id:c.id,empty:!buildings.contains(c.id)).frame(width:90*s,height:100.8*s) }
-                        .buttonStyle(.plain).position(x:x*s,y:(y-30.24)*s).zIndex(y)
-                        .accessibilityLabel("\(buildings.contains(c.id) ? "Open" : "Preview locked") \(c.building)")
-                }
-            }
-        }.aspectRatio(600/420,contentMode:.fit)
+        BoundedMapScrollView(unlockedPlotIDs: unlockedPlotIDs, select: select)
+            .accessibilityLabel("City map")
+            .accessibilityHint("Drag to explore. Pinch to zoom in or out.")
+        .aspectRatio(405.0 / 370.0, contentMode: .fit)
+        .clipped()
+        // Keep the feathered edges fixed to the viewport as the map moves.
+        .mask {
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.25), location: 0.04),
+                    .init(color: .black, location: 0.16),
+                    .init(color: .black, location: 0.82),
+                    .init(color: .black.opacity(0.25), location: 0.96),
+                    .init(color: .clear, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
     }
 }
+
+// UIKit owns both gestures so dragging and pinching share one coordinate space.
+private struct BoundedMapScrollView: UIViewRepresentable {
+    let unlockedPlotIDs: Set<String>
+    let select: (Int) -> Void
+
+    func makeUIView(context: Context) -> MapScrollView {
+        MapScrollView()
+    }
+
+    func updateUIView(_ scrollView: MapScrollView, context: Context) {
+        scrollView.updatePlots(unlockedIDs: unlockedPlotIDs, select: select)
+    }
+}
+
+private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
+    private let canvas = UIView(frame: CGRect(origin: .zero, size: CityRoadLayout.canvasSize))
+    private let mapImageView = CityRoadCanvasView()
+    private var previousViewport = CGSize.zero
+    private let plotViews = CityPlot.reserved.sorted { $0.groundCenter.y < $1.groundCenter.y }
+        .map { CityPlotView(plot: $0) }
+
+    init() {
+        super.init(frame: .zero)
+        delegate = self
+        bounces = false
+        bouncesZoom = false
+        showsHorizontalScrollIndicator = false
+        showsVerticalScrollIndicator = false
+        contentInsetAdjustmentBehavior = .never
+        isDirectionalLockEnabled = false
+        canCancelContentTouches = true
+        addSubview(canvas)
+        mapImageView.frame = canvas.bounds
+        canvas.addSubview(mapImageView)
+        for plotView in plotViews {
+            canvas.addSubview(plotView)
+        }
+        contentSize = canvas.bounds.size
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(toggleZoom(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        addGestureRecognizer(doubleTap)
+        accessibilityCustomActions = [
+            UIAccessibilityCustomAction(name: "Zoom in", target: self, selector: #selector(zoomIn)),
+            UIAccessibilityCustomAction(name: "Zoom out", target: self, selector: #selector(zoomOut))
+        ]
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    func updatePlots(unlockedIDs: Set<String>, select: @escaping (Int) -> Void) {
+        for plotView in plotViews {
+            plotView.isUnlocked = unlockedIDs.contains(plotView.plot.id)
+            plotView.onSelect = { if let id = Int(plotView.plot.id) { select(id) } }
+        }
+    }
+
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? { canvas }
+
+    override func touchesShouldCancel(in view: UIView) -> Bool {
+        // A drag starting over a building must pan instead of holding its button.
+        true
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.width > 0, bounds.height > 0, bounds.size != previousViewport else { return }
+        let firstLayout = previousViewport == .zero
+        let oldMinimum = minimumZoomScale
+        let center = CGPoint(x: (contentOffset.x + previousViewport.width / 2) / zoomScale,
+                             y: (contentOffset.y + previousViewport.height / 2) / zoomScale)
+        let relativeZoom = zoomScale / max(oldMinimum, 0.001)
+        previousViewport = bounds.size
+        // At the minimum scale the canvas fills the viewport, with no blank margins.
+        minimumZoomScale = max(bounds.width / canvas.bounds.width, bounds.height / canvas.bounds.height)
+        maximumZoomScale = minimumZoomScale * 4
+        setZoomScale(min(maximumZoomScale, minimumZoomScale * (firstLayout ? 1.5 : relativeZoom)), animated: false)
+        let target = firstLayout ? CGPoint(x: canvas.bounds.midX, y: canvas.bounds.midY) : center
+        contentOffset = CGPoint(
+            x: min(max(0, target.x * zoomScale - bounds.width / 2), max(0, contentSize.width - bounds.width)),
+            y: min(max(0, target.y * zoomScale - bounds.height / 2), max(0, contentSize.height - bounds.height))
+        )
+    }
+
+    @objc private func toggleZoom(_ gesture: UITapGestureRecognizer) {
+        let scale = zoomScale > minimumZoomScale * 2 ? minimumZoomScale : min(zoomScale * 2, maximumZoomScale)
+        let point = gesture.location(in: canvas)
+        zoom(to: CGRect(x: point.x - bounds.width / scale / 2,
+                        y: point.y - bounds.height / scale / 2,
+                        width: bounds.width / scale, height: bounds.height / scale), animated: !UIAccessibility.isReduceMotionEnabled)
+    }
+
+    @objc private func zoomIn() -> Bool {
+        setZoomScale(min(zoomScale * 1.5, maximumZoomScale), animated: !UIAccessibility.isReduceMotionEnabled)
+        return true
+    }
+
+    @objc private func zoomOut() -> Bool {
+        setZoomScale(max(zoomScale / 1.5, minimumZoomScale), animated: !UIAccessibility.isReduceMotionEnabled)
+        return true
+    }
+}
+
+// Coordinates use the map's original 1600 × 1920 canvas, independent of screen size.
+private struct CityPlot: Identifiable {
+    let id: String
+    let asset: String
+    let assetSize: CGSize
+    let groundCenter: CGPoint
+
+    private var buildingSize: CGSize {
+        CGSize(width: assetSize.width * 1.5, height: assetSize.height * 1.5)
+    }
+
+    var footprintSize: CGSize {
+        let width = buildingSize.width + 28
+        return CGSize(width: width, height: width * 4 / 7)
+    }
+
+    var reservedFrame: CGRect {
+        let size = buildingSize
+        // The isometric base's front corner is below its ground center.
+        let bottom = groundCenter.y + size.width * 2 / 7
+        return CGRect(
+            x: groundCenter.x - footprintSize.width / 2,
+            y: bottom - size.height,
+            width: footprintSize.width,
+            height: size.height + 8
+        )
+    }
+
+    var buildingFrame: CGRect {
+        CGRect(x: 14, y: 0, width: buildingSize.width, height: buildingSize.height)
+    }
+
+    // Stable IDs are the integration point for future saved unlock progress.
+    static let reserved: [CityPlot] = [
+        CityPlot(id: "6", asset: "house small-2", assetSize: CGSize(width: 105, height: 107), groundCenter: CityRoadLayout.plotCenter(column: -1, row: 0)),
+        CityPlot(id: "0", asset: "building-mid-1", assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: 0, row: 0)),
+        CityPlot(id: "2", asset: "building-mid-2", assetSize: CGSize(width: 119, height: 164), groundCenter: CityRoadLayout.plotCenter(column: 0, row: -1)),
+        CityPlot(id: "1", asset: "shop-2", assetSize: CGSize(width: 144, height: 145), groundCenter: CityRoadLayout.plotCenter(column: 0, row: 1)),
+        CityPlot(id: "3", asset: "buiding-tall-2", assetSize: CGSize(width: 135, height: 300), groundCenter: CityRoadLayout.plotCenter(column: 1, row: 0)),
+        CityPlot(id: "7", asset: "building-tall-1", assetSize: CGSize(width: 131, height: 298), groundCenter: CityRoadLayout.plotCenter(column: 1, row: 1)),
+        CityPlot(id: "4", asset: "building-mid-1", assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: -1, row: -1)),
+        CityPlot(id: "5", asset: "shop-2", assetSize: CGSize(width: 144, height: 145), groundCenter: CityRoadLayout.plotCenter(column: -1, row: 2)),
+        CityPlot(id: "8", asset: "building-mid-1", assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: 2, row: -1)),
+        CityPlot(id: "9", asset: "building-mid-2", assetSize: CGSize(width: 119, height: 164), groundCenter: CityRoadLayout.plotCenter(column: 2, row: 1))
+    ]
+}
+
+private final class CityPlotView: UIControl {
+    var onSelect: (() -> Void)?
+
+    override func accessibilityActivate() -> Bool {
+        onSelect?()
+        return true
+    }
+
+    @objc private func openPlot() { onSelect?() }
+    let plot: CityPlot
+    private let buildingImageView: UIImageView
+    var isUnlocked = false {
+        didSet {
+            guard oldValue != isUnlocked else { return }
+            buildingImageView.isHidden = !isUnlocked
+            accessibilityLabel = isUnlocked
+                ? "Open \(ContentRepository.challenges[Int(plot.id) ?? 0].building)"
+                : "Preview locked \(ContentRepository.challenges[Int(plot.id) ?? 0].building)"
+            setNeedsDisplay()
+        }
+    }
+
+    init(plot: CityPlot) {
+        self.plot = plot
+        buildingImageView = UIImageView(image: UIImage(named: plot.asset))
+        super.init(frame: plot.reservedFrame)
+        backgroundColor = .clear
+        isOpaque = false
+        isUserInteractionEnabled = true
+        addTarget(self, action: #selector(openPlot), for: .touchUpInside)
+        isAccessibilityElement = true
+        accessibilityLabel = String(localized: "Locked plot")
+        accessibilityTraits = .button
+        accessibilityLabel = ContentRepository.challenges[Int(plot.id) ?? 0].building
+        buildingImageView.frame = plot.buildingFrame
+        buildingImageView.contentMode = .scaleAspectFit
+        buildingImageView.isHidden = true
+        addSubview(buildingImageView)
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard !isUnlocked else { return }
+        let footprint = plot.footprintSize
+        let center = CGPoint(
+            x: bounds.midX,
+            y: plot.groundCenter.y - plot.reservedFrame.minY
+        )
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: center.x, y: center.y - footprint.height / 2))
+        path.addLine(to: CGPoint(x: center.x + footprint.width / 2, y: center.y))
+        path.addLine(to: CGPoint(x: center.x, y: center.y + footprint.height / 2))
+        path.addLine(to: CGPoint(x: center.x - footprint.width / 2, y: center.y))
+        path.close()
+        UIColor.darkGray.withAlphaComponent(0.65).setStroke()
+        path.lineWidth = 2.5
+        path.setLineDash([8, 6], count: 2, phase: 0)
+        path.stroke()
+
+        let lock = UIImage(systemName: "lock.fill")?.withTintColor(
+            .darkGray,
+            renderingMode: .alwaysOriginal
+        )
+        lock?.draw(in: CGRect(x: center.x - 11, y: center.y - 14, width: 22, height: 28))
+    }
+}
+
+
+
+/// Shared coordinates keep roads, planting and building plots aligned.
+enum CityRoadLayout {
+    static let canvasSize = CGSize(width: 1600, height: 1920)
+
+    static func point(column: CGFloat, row: CGFloat) -> CGPoint {
+        CGPoint(x: 800 + (column - row) * 210, y: 840 + (column + row) * 120)
+    }
+
+    static func plotCenter(column: CGFloat, row: CGFloat) -> CGPoint {
+        point(column: column + 0.5, row: row + 0.5)
+    }
+}
+
+final class CityRoadCanvasView: UIView {
+    private let horizontal = UIImage(named: "road-horizontal")
+    private let vertical = UIImage(named: "road-vertical")
+    private let junction = UIImage(named: "road-junction")
+    private let forest = UIImage(named: "forest")
+    private let missingNorthwest = UIImage(named: "road-t junction-1")
+    private let missingSoutheast = UIImage(named: "road-t junction-2")
+    private let missingNortheast = UIImage(named: "road-t junction-3")
+    private let missingSouthwest = UIImage(named: "road-t junction-4")
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isOpaque = false
+        isUserInteractionEnabled = false
+        contentMode = .redraw
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    // Omitted links merge selected blocks into longer, staggered green spaces.
+    private func omitsVertical(_ column: Int, _ row: Int) -> Bool {
+        (column == -1 && row == 0) || (column == 2 && row == 1)
+            || (column == -3 && row == -2) || (column == 0 && row == 1)
+            || (column == -2 && row == 1) || (column == 0 && row == -2)
+            || (column == 3 && row == 3) || (column == -3 && row == -4)
+    }
+
+    private func omitsHorizontal(_ column: Int, _ row: Int) -> Bool {
+        (column == 1 && row == -1) || (column == -1 && row == 2)
+            || (column == 2 && row == 3) || (column == 2 && row == -2)
+            || (column == -2 && row == -1) || (column == 4 && row == 0)
+            || (column == 0 && row == 3) || (column == -4 && row == -2)
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        context.saveGState()
+        context.scaleBy(
+            x: bounds.width / CityRoadLayout.canvasSize.width,
+            y: bounds.height / CityRoadLayout.canvasSize.height
+        )
+        for column in -7...7 {
+            for row in -7...7 {
+                let center = CityRoadLayout.point(column: CGFloat(column), row: CGFloat(row))
+                let intersection: UIImage?
+                if omitsVertical(column, row) {
+                    intersection = missingSoutheast
+                } else if omitsVertical(column - 1, row) {
+                    intersection = missingNorthwest
+                } else if omitsHorizontal(column, row) {
+                    intersection = missingSouthwest
+                } else if omitsHorizontal(column, row - 1) {
+                    intersection = missingNortheast
+                } else {
+                    intersection = junction
+                }
+                intersection?.draw(in: CGRect(x: center.x - 84, y: center.y - 48, width: 168, height: 96))
+                if !omitsVertical(column, row) {
+                    vertical?.draw(in: CGRect(x: center.x + 42, y: center.y + 24, width: 126, height: 72))
+                }
+                if !omitsHorizontal(column, row) {
+                    horizontal?.draw(in: CGRect(x: center.x - 168, y: center.y + 24, width: 126, height: 72))
+                }
+            }
+        }
+
+        // Fixed, asymmetric placements stay stable during redraws and zooming.
+        // Fractional block offsets and varied sizes break up diagonal tree rows.
+        let groves: [(column: CGFloat, row: CGFloat, width: CGFloat)] = [
+            (-2.12, -0.91, 108), (-0.86, -2.08, 132),
+            (1.12, -0.88, 102), (-1.15, 1.08, 125),
+            (2.08, 0.16, 138), (0.12, 2.28, 94),
+            (-2.06, 1.13, 112), (1.16, -2.11, 92),
+            (2.13, 2.06, 122), (3.04, 0.85, 98),
+            (-3.12, -1.88, 134), (-1.87, -3.14, 100),
+            (3.16, 3.03, 110), (1.9, 4.12, 130)
+        ]
+        for grove in groves.sorted(by: { $0.column + $0.row < $1.column + $1.row }) {
+            let center = CityRoadLayout.plotCenter(column: grove.column, row: grove.row)
+            let height = grove.width * 148 / 112
+            forest?.draw(in: CGRect(
+                x: center.x - grove.width / 2,
+                y: center.y - height + grove.width / 4,
+                width: grove.width, height: height
+            ))
+        }
+        context.restoreGState()
+    }
+}
+
+#Preview("Reference city · All buildings") {
+    CityIllustration(buildings: Set(0..<10))
+        .background(AppTheme.background)
+}
+
+#if DEBUG
+#Preview("BuildingArt") {
+    PreviewScreen() { BuildingArt(id: 1).frame(height: 180) }
+}
+
+#Preview("BoundedMapScrollView") {
+    PreviewScreen() { BoundedMapScrollView(unlockedPlotIDs: ["0", "1"], select: { _ in }) }
+}
+#endif

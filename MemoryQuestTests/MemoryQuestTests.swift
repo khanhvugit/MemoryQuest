@@ -40,8 +40,8 @@ import Testing
             session.advance()
         }
         let attempt = session.finish(store: persistence)
-        #expect(attempt?.score == 13)
-        #expect(attempt?.results.count == 8)
+        #expect(attempt?.score == 10)
+        #expect(attempt?.results.count == 10)
         #expect(persistence.progress.buildings == [0])
         _ = session.finish(store: persistence)
         #expect(persistence.progress.attempts.count == 1)
@@ -86,10 +86,10 @@ import Testing
     @Test func sequenceScoringAndBiologyChecklist() {
         let sequence = ChallengeSessionViewModel(id: 3, subject: .biology, difficulty: .hard, history: [])
         sequence.beginRecall()
-        sequence.order = [0, 1, 2, 3, 5, 4]
+        sequence.order = [1, 0]
         sequence.checkSequence()
-        #expect(sequence.results.count == 6)
-        #expect(sequence.results.filter(\.correct).count == 4)
+        #expect(sequence.results.count == 1)
+        #expect(sequence.results.filter(\.correct).count == 0)
         let robot = ChallengeSessionViewModel(id: 8, subject: .biology, difficulty: .medium, history: [])
         robot.index = 1
         robot.answer = "A ribosome reads mRNA and joins amino acids to build a protein."
@@ -127,4 +127,85 @@ import Testing
             #expect(review.results.last?.sample == false)
         } else { Issue.record("An earlier missed Stack should be prioritised.") }
     }
+    @Test func everyChallengeCompletesAtSelectedQuestionCount() {
+        for subject in Subject.allCases {
+            for difficulty in Difficulty.allCases {
+                for id in 0..<10 {
+                    let session = ChallengeSessionViewModel(id: id, subject: subject, difficulty: difficulty, history: [])
+                    #expect(session.total == difficulty.questionCount)
+                    if id == 2 { session.groupRecall() } else { session.beginRecall() }
+                    for question in 0..<difficulty.questionCount {
+                        #expect(!session.finished)
+                        #expect(session.index == question)
+                        switch id {
+                        case 1:
+                            session.flipped = true
+                            session.selfRate(true)
+                        case 2:
+                            session.answer = session.content.categories[session.groupedTerms[question].category]
+                            session.check()
+                            session.advance()
+                        case 3:
+                            session.order = Array(session.currentSequence.indices)
+                            session.checkSequence()
+                            session.advance()
+                        case 4:
+                            session.answer = session.storyTerms[question]
+                            session.check()
+                            session.advance()
+                        case 5:
+                            session.answer = session.links[question].term
+                            session.check()
+                            session.advance()
+                        case 8:
+                            session.answer = session.content.robots[question].example
+                            session.check()
+                            session.advance()
+                        case 9:
+                            session.choice = session.content.detectives[question].a
+                            session.check()
+                            session.advance()
+                        default:
+                            session.answer = session.deck[question].concept.term
+                            session.check()
+                            session.advance()
+                        }
+                    }
+                    #expect(session.finished)
+                    #expect(session.results.allSatisfy(\.correct))
+                    if id != 8 { #expect(session.results.count == difficulty.questionCount) }
+                }
+            }
+        }
+    }
+
+    @Test func expandedBanksContainDistinctQuestionsAndValidAnswers() {
+        for subject in Subject.allCases {
+            let content = ContentRepository.content(subject)
+            #expect(Set(content.terms.map(\.id)).count >= 12)
+            #expect(Set(content.links.map(\.term)).count >= 12)
+            #expect(Set(content.detectives.map(\.q)).count >= 12)
+            #expect(Set(content.robots.map(\.q)).count >= 12)
+            for question in content.detectives {
+                #expect(question.opts.indices.contains(question.a))
+                #expect(Set(question.opts).count == question.opts.count)
+            }
+            for question in content.robots {
+                #expect(question.rules.allSatisfy { $0.matches(question.example) })
+            }
+            for difficulty in Difficulty.allCases {
+                let session = ChallengeSessionViewModel(id: 5, subject: subject, difficulty: difficulty, history: [])
+                for index in session.links.indices { session.groups[index] = index }
+                session.checkLinks()
+                #expect(session.feedbackCorrect)
+                #expect(session.results.count == difficulty.questionCount)
+                let grouping = ChallengeSessionViewModel(id: 2, subject: subject, difficulty: difficulty, history: [])
+                for index in grouping.groupedTerms.indices { grouping.groups[index] = grouping.groupedTerms[index].category }
+                grouping.checkGroups()
+                #expect(grouping.feedbackCorrect)
+                #expect(grouping.results.isEmpty)
+            }
+        }
+    }
+
 }

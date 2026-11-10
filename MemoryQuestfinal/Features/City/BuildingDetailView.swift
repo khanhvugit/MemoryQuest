@@ -30,3 +30,9 @@ struct BuildingDetailView: View {
         }.navigationTitle("Building details")
     }
 }
+
+#if DEBUG
+#Preview("BuildingDetailView") {
+    PreviewScreen(results: true) { BuildingDetailView(id: 0) }
+}
+#endif

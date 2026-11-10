@@ -5,29 +5,160 @@ struct ChallengeResultView: View {
     @Environment(ProgressStore.self) private var store
     @Environment(AppState.self) private var app
     @State private var review = false
+
     var body: some View {
-        if let attempt=store.progress.attempts.first(where:{ $0.id == attemptID }) {
-            let isNew=store.progress.attempts.first(where:{ $0.challengeID == attempt.challengeID })?.id == attemptID
-            QuestPage {
-                Image(systemName:"trophy.fill").font(.system(size:64)).foregroundStyle(.yellow).frame(maxWidth:.infinity).padding(.top,20)
-                PageTitle(text:"Challenge Complete!")
-                Text(ContentRepository.challenges[attempt.challengeID].title).foregroundStyle(AppTheme.muted)
-                Text("\(attempt.subject.title) · \(attempt.difficulty.rawValue)").font(.caption)
-                QuestCard {
-                    MetricRow(title:"Time",value:"\(attempt.duration/60)m \(attempt.duration%60)s")
-                    MetricRow(title:attempt.selfRated ? "Self-reported recall" : attempt.challengeID == 8 ? "Checklist coverage" : "Accuracy",value:"\(attempt.score)%")
-                    MetricRow(title:attempt.selfRated ? "Cards recalled" : "Correct checks",value:"\(attempt.results.filter(\.correct).count)/\(attempt.results.count)")
-                    MetricRow(title:"Building",value:isNew ? "Unlocked" : "Already constructed")
+        if let attempt = store.progress.attempts.first(where: { $0.id == attemptID }) {
+            let isNew = store.progress.attempts.first(where: { $0.challengeID == attempt.challengeID })?.id == attemptID
+            CelebrationPage {
+                VStack(spacing: 20) {
+                    CompletionTrophy()
+                        .frame(width: 200, height: 190)
+                    Text("Challenge Complete!")
+                        .font(.largeTitle.bold())
+                        .tracking(-1)
+                        .multilineTextAlignment(.center)
+                    CompletionMetrics(
+                        title: attempt.selfRated ? "Self-reported recall" : attempt.challengeID == 8 ? "Checklist coverage" : "Accuracy",
+                        score: attempt.score,
+                        duration: attempt.duration
+                    )
+                    VStack(spacing: 16) {
+                        CelebrationButton(title: isNew ? "Unlock new building" : "View building") {
+                            app.path.append(.reward(attemptID, isNew))
+                        }
+                        CelebrationButton(title: review ? "Hide answer review" : "Review answers", secondary: true) {
+                            review.toggle()
+                        }
+                    }
+                    if review {
+                        AttemptAnswersView(results: attempt.results)
+                    }
                 }
-                Text(attempt.score == 100 ? "You recalled every checked idea in this attempt. Try again after a delay." : "You have useful clues for what to practise next. Your \(ContentRepository.challenges[attempt.challengeID].building) is earned through completion.").font(.subheadline).foregroundStyle(AppTheme.muted)
-                if attempt.results.contains(where:\.delayed) { Text("\(attempt.results.filter { $0.delayed && $0.correct }.count)/\(attempt.results.filter(\.delayed).count) concepts retrieved after at least a day.").font(.subheadline) }
-                QuestButton(title:review ? "Hide answer review" : "Review answers",secondary:true) { review.toggle() }
-                if review { AttemptAnswersView(results:attempt.results) }
-                QuestButton(title:"Continue") { app.path.append(.reward(attemptID,isNew)) }
-            }.navigationBarBackButtonHidden()
+            }
         }
     }
 }
+
+/// Keeps the celebration centered with room to scroll on smaller displays.
+struct CelebrationPage<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                content
+                    .frame(maxWidth: 440)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
+                    .padding(.top, max(32, min(120, geometry.size.height * 0.16)))
+                    .padding(.bottom, 40)
+            }
+            .scrollIndicators(.hidden)
+            .background(AppTheme.background)
+        }
+        .navigationBarBackButtonHidden()
+        .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+struct CelebrationButton: View {
+    let title: String
+    var secondary = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.body.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .padding(.horizontal, 12)
+                .foregroundStyle(secondary ? AppTheme.muted : .white)
+                .background(secondary ? Color("CardBackground") : AppTheme.coral,
+                            in: RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(secondary ? AppTheme.line : .clear)
+                }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct CompletionMetrics: View {
+    let title: String
+    let score: Int
+    let duration: Int
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 16) {
+                    CompletionMetric(title: title, value: "\(score)%")
+                    Divider()
+                    CompletionMetric(title: "Time", value: "\(duration) sec")
+                }
+            } else {
+                HStack(spacing: 0) {
+                    CompletionMetric(title: title, value: "\(score)%")
+                    Rectangle().fill(AppTheme.muted).frame(width: 1, height: 76)
+                    CompletionMetric(title: "Time", value: "\(duration) sec")
+                }
+            }
+        }
+        .padding(.vertical, 18)
+        .background(Color("CardBackground"), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct CompletionMetric: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppTheme.muted)
+            Text(value).font(.largeTitle.bold()).monospacedDigit()
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 8)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct CompletionTrophy: View {
+    private let gold = LinearGradient(
+        colors: [Color(hex: "FFD331"), Color(hex: "FFEB54"), Color(hex: "FFCA2D")],
+        startPoint: .leading, endPoint: .trailing
+    )
+
+    var body: some View {
+        ZStack {
+            HStack {
+                RoundedRectangle(cornerRadius: 30).strokeBorder(gold, lineWidth: 16)
+                Spacer().frame(width: 60)
+                RoundedRectangle(cornerRadius: 30).strokeBorder(gold, lineWidth: 16)
+            }
+            .frame(width: 194, height: 86)
+            .offset(y: -21)
+            Rectangle().fill(gold).frame(width: 22, height: 42).offset(y: 68)
+            UnevenRoundedRectangle(bottomLeadingRadius: 60, bottomTrailingRadius: 60)
+                .fill(gold)
+                .frame(width: 124, height: 132)
+                .offset(y: -23)
+            Capsule().fill(gold).frame(width: 140, height: 20).offset(y: -85)
+            Image(systemName: "star.fill")
+                .font(.system(size: 50))
+                .foregroundStyle(Color(hex: "FFF3AF"))
+                .offset(y: -27)
+            Rectangle().fill(gold).frame(width: 54, height: 13).offset(y: 88)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
 struct MetricRow: View {
     let title, value: String
     var body: some View { HStack(alignment:.top) { Text(title).foregroundStyle(AppTheme.muted); Spacer(); Text(value).fontWeight(.semibold).multilineTextAlignment(.trailing) }; Divider() }
@@ -46,3 +177,17 @@ struct AttemptAnswersView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("ChallengeResultView") {
+    PreviewScreen(results: true) { ChallengeResultView(attemptID: PreviewData.attempt.id) }
+}
+
+#Preview("MetricRow") {
+    PreviewScreen() { MetricRow(title: "Accuracy", value: "50%") }
+}
+
+#Preview("AttemptAnswersView") {
+    PreviewScreen() { QuestPage { AttemptAnswersView(results: PreviewData.attempt.results) } }
+}
+#endif

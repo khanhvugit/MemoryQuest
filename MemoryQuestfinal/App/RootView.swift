@@ -1,20 +1,23 @@
 import SwiftUI
 
 struct RootView: View {
-    @State private var store = ProgressStore()
+    @State private var store: ProgressStore
+
+    init(store: ProgressStore = ProgressStore()) {
+        _store = State(initialValue: store)
+    }
     @State private var app = AppState()
     var body: some View {
         @Bindable var app = app
-        VStack(spacing: 0) {
         NavigationStack(path: $app.path) {
             Group {
                 if !store.progress.welcomed { WelcomeView() }
                 else {
-                    switch app.tab {
-                    case .home: HomeView()
-                    case .lessons: LessonListView()
-                    case .challenges: ChallengeListView()
-                    case .progress: LearningProgressView()
+                    TabView(selection: $app.tab) {
+                        Tab("Home", systemImage: "house", value: AppTab.home) { HomeView() }
+                        Tab("Lessons", systemImage: "book", value: AppTab.lessons) { LessonListView() }
+                        Tab("Challenges", systemImage: "medal", value: AppTab.challenges) { ChallengeListView() }
+                        Tab("Progress", systemImage: "chart.bar.xaxis", value: AppTab.progress) { LearningProgressView() }
                     }
                 }
             }
@@ -23,8 +26,6 @@ struct RootView: View {
                 DestinationView(route: route)
             }
             .toolbarTitleDisplayMode(.inline)
-        }
-        if store.progress.welcomed { BottomNavigation(selected: app.tab) { app.navigate($0) } }
         }
         .background(AppTheme.background)
         .environment(store).environment(app).tint(AppTheme.coral).foregroundStyle(AppTheme.ink).preferredColorScheme(.light)
@@ -51,20 +52,6 @@ struct DestinationView: View {
         }.toolbar(.visible, for: .navigationBar).toolbarTitleDisplayMode(.inline)
     }
 }
-struct BottomNavigation: View {
-    let selected: AppTab
-    let select: (AppTab) -> Void
-    var body: some View {
-        HStack(spacing:0) {
-            ForEach(AppTab.allCases) { tab in
-                Button { select(tab) } label: {
-                    VStack(spacing:5) { Image(systemName:tab.symbol).font(.system(size:21)); Text(tab.rawValue).font(.caption) }
-                        .frame(maxWidth:.infinity).padding(.vertical,10).background(selected == tab ? AppTheme.line : .clear,in:Capsule())
-                }.buttonStyle(.plain).accessibilityAddTraits(selected == tab ? .isSelected : [])
-            }
-        }.padding(5).background(.white,in:Capsule()).overlay(Capsule().stroke(Color(hex:"efedf0"))).padding(.horizontal,14).padding(.vertical,8).background(AppTheme.background)
-    }
-}
 struct WelcomeView: View {
     @Environment(ProgressStore.self) private var store
     @State private var name = "Alex"
@@ -82,3 +69,17 @@ struct WelcomeView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("RootView") {
+    RootView(store: PreviewData.store())
+}
+
+#Preview("DestinationView") {
+    PreviewScreen() { DestinationView(route: .challenge(1)) }
+}
+
+#Preview("WelcomeView") {
+    PreviewScreen() { WelcomeView() }
+}
+#endif

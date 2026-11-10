@@ -22,3 +22,9 @@ struct AttemptHistoryView: View {
         }.navigationTitle("Previous results")
     }
 }
+
+#if DEBUG
+#Preview("AttemptHistoryView") {
+    PreviewScreen(results: true) { AttemptHistoryView(challengeID: 0) }
+}
+#endif

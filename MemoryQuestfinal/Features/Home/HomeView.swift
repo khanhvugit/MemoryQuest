@@ -12,9 +12,13 @@ struct HomeView: View {
                         .font(.largeTitle.bold())
                     Spacer()
                     Button { app.path.append(.settings) } label: {
-                        Image(systemName: "slider.horizontal.3")
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundStyle(AppTheme.ink)
                             .frame(width: 44, height: 44)
                     }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: Circle())
                     .accessibilityLabel("Settings")
                 }
                 .padding(.horizontal, 28)
@@ -81,7 +85,7 @@ private struct HomeSuggestions: View {
             !store.progress.completedLessons.contains($0.id)
         } ?? ContentRepository.lessons[4]
         VStack(alignment: .leading, spacing: 10) {
-            Text("Suggestions").font(.title2.bold()).padding(.horizontal, 4)
+            Text("Ready to practice").font(.title2.bold()).padding(.horizontal, 4)
             Button {
                 if store.progress.buildings.count == 10 {
                     app.navigate(.progress)
@@ -113,3 +117,17 @@ private struct HomeSuggestions: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("HomeView") {
+    PreviewScreen() { HomeView() }
+}
+
+#Preview("HomeCityProgress") {
+    PreviewScreen() { HomeCityProgress(count: 3, open: {}) }
+}
+
+#Preview("HomeSuggestions") {
+    PreviewScreen() { HomeSuggestions() }
+}
+#endif

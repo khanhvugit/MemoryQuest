@@ -36,3 +36,13 @@ struct LessonBodyBlock: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("LessonBodyView") {
+    PreviewScreen() { LessonBodyView(page: ContentRepository.lessons[0].pages[0], color: .purple.opacity(0.1)) }
+}
+
+#Preview("LessonBodyBlock") {
+    PreviewScreen() { LessonBodyBlock(block: LessonBlock(id: "preview", kind: "callout", text: "Retrieve an idea before checking your notes."), color: .purple.opacity(0.1)) }
+}
+#endif

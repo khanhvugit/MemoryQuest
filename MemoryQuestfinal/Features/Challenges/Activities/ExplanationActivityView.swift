@@ -26,3 +26,13 @@ struct DetectiveActivityView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("ExplanationActivityView") {
+    PreviewScreen() { QuestPage { ExplanationActivityView(model: PreviewData.session(8)) } }
+}
+
+#Preview("DetectiveActivityView") {
+    PreviewScreen() { QuestPage { DetectiveActivityView(model: PreviewData.session(9)) } }
+}
+#endif

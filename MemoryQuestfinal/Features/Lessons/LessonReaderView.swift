@@ -11,7 +11,6 @@ struct LessonReaderView: View {
         let page = ContentRepository.page(lesson:id,step:model.step,subject:store.progress.subject)
         QuestPage {
             HStack(spacing:6) { ForEach(0..<5) { i in Capsule().fill(i <= model.step ? Color(hex:lesson.deep) : AppTheme.line).frame(height:4) } }.accessibilityLabel("Step \(model.step+1) of 5")
-            Text("STEP \(model.step+1) OF 5 · \(["DISCOVER","UNDERSTAND","DEMONSTRATION","GUIDED PRACTICE","APPLY"][model.step])").font(.caption.weight(.semibold)).tracking(1.5).foregroundStyle(AppTheme.muted)
             PageTitle(text:page.title)
             if model.step == 2 { LessonDemonstration(id:id,subject:store.progress.subject,page:page,model:model) }
             else { LessonBodyView(page:page,color:Color(hex:lesson.soft)) }
@@ -35,6 +34,11 @@ struct LessonDemonstration: View {
     let subject: Subject
     let page: LessonPage
     @Bindable var model: LessonViewModel
+    private var revealedText: String {
+        let biology: [String] = ["A ribosome builds the polypeptide by reading messenger RNA.","Cell Structures: Nucleus, Ribosome, Mitochondrion. Biomolecules: Protein, Lipid, Carbohydrate. Transport: Diffusion, Osmosis, Active transport.","Which structure reads the working copy of a gene? A ribosome reads messenger RNA.","Missed Osmosis today? Check water movement now and retrieve it tomorrow. Adjust the planned interval.","Ions move against a concentration gradient → Active transport. Explain why energy is required."]
+        let computerScience: [String] = ["C comes off first, because it was added last. Stack = LIFO.","Can you name three data structures without the list? Stack, Queue, and Array are one meaningful chunk.","In a printer queue, which job should be handled first? The earliest job added.","Missed Queue today? Check FIFO now and schedule another retrieval tomorrow. Do not wait for a longer interval just because it was planned.","Customer support requests served in arrival order → Queue. Explain FIFO to justify the choice."]
+        return subject == .biology ? biology[id] : computerScience[id]
+    }
     var body: some View {
         VStack(alignment:.leading,spacing:18) {
             if !model.revealed || ![0,1].contains(id) { LessonBodyView(page:page,color:Color(hex:ContentRepository.lessons[id].soft)) }
@@ -43,7 +47,7 @@ struct LessonDemonstration: View {
                 LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:7)) { ForEach(1..<15) { day in Text("\(day)").frame(maxWidth:.infinity).padding(8).background([1,2,4,7].contains(day) ? Color(hex:"e4f4e3") : .white,in:RoundedRectangle(cornerRadius:6)) } }
             }
             if model.revealed {
-                Text(subject == .biology ? ["A ribosome builds the polypeptide by reading messenger RNA.","Cell Structures: Nucleus, Ribosome, Mitochondrion. Biomolecules: Protein, Lipid, Carbohydrate. Transport: Diffusion, Osmosis, Active transport.","Which structure reads the working copy of a gene? A ribosome reads messenger RNA.","Missed Osmosis today? Check water movement now and retrieve it tomorrow. Adjust the planned interval.","Ions move against a concentration gradient → Active transport. Explain why energy is required."][id] : ["C comes off first, because it was added last. Stack = LIFO.","Can you name three data structures without the list? Stack, Queue, and Array are one meaningful chunk.","In a printer queue, which job should be handled first? The earliest job added.","Missed Queue today? Check FIFO now and schedule another retrieval tomorrow. Do not wait for a longer interval just because it was planned.","Customer support requests served in arrival order → Queue. Explain FIFO to justify the choice."][id])
+                Text(revealedText)
                     .padding(16).background(Color(hex:ContentRepository.lessons[id].soft),in:RoundedRectangle(cornerRadius:12))
             } else {
                 QuestButton(title:["Hide definition & reveal the answer","Hide the groups & test yourself","Reveal a self-check question","Reveal a review decision","Reveal another application"][id],secondary:true) { model.revealed = true }
@@ -62,13 +66,19 @@ struct GuidedPractice: View {
         }
         return [[],["Stack, Queue, Array","If, Boolean, Stack","String, Queue, While"],["A stack of plates: last placed, first removed","A queue of people: first arrived, first served","An unordered bag: remove any item"],[],["A function does stuff","A function is a reusable block of code for a specific task","A function always stores items in arrival order"]][id]
     }
+    private var hintText: String {
+        if id == 3 { return "Read the sample sequence again: 1, 2, 4, 7." }
+        let biology: [String] = ["Think of the protein-building workshop.","Cell structures perform jobs within cells.","Which analogy involves assembling a chain?","","Include catalysis and not being consumed."]
+        let computerScience: [String] = ["Think of plates: last on, first off.","Data structures organise collections of elements.","Think about the last plate you put on top.","","Include both what it is and why it is useful."]
+        return subject == .biology ? biology[id] : computerScience[id]
+    }
     var body: some View {
         QuestCard {
             if id == 0 { Text("Your answer"); AnswerField(text:$model.answer,prompt:subject == .biology ? "Type the cell structure" : "Type the data structure") }
             else { ForEach(Array(choices.enumerated()),id:\.element) { i,choice in ChoiceButton(title:choice,selected:model.choice == i) { model.choice = i } } }
             QuestButton(title:"Check my answer",secondary:true,disabled:id == 0 ? model.answer.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty : model.choice < 0) { model.check(id:id,subject:subject) }
             Button("Show a hint") { model.hint = true }.foregroundStyle(Color(hex:ContentRepository.lessons[id].deep))
-            if model.hint { Text(id == 3 ? "Read the sample sequence again: 1, 2, 4, 7." : (subject == .biology ? ["Think of the protein-building workshop.","Cell structures perform jobs within cells.","Which analogy involves assembling a chain?","","Include catalysis and not being consumed."][id] : ["Think of plates: last on, first off.","Data structures organise collections of elements.","Think about the last plate you put on top.","","Include both what it is and why it is useful."][id])).font(.subheadline).foregroundStyle(AppTheme.muted) }
+            if model.hint { Text(hintText).font(.subheadline).foregroundStyle(AppTheme.muted) }
             if let feedback = model.feedback { FeedbackView(text:feedback,correct:model.passed) }
         }
     }
@@ -83,14 +93,60 @@ struct LessonCompleteView: View {
     let id: Int
     @Environment(AppState.self) private var app
     var body: some View {
-        QuestPage {
-            Image(systemName:"checkmark.circle").font(.system(size:64)).foregroundStyle(.green).frame(maxWidth:.infinity).padding(.top,30)
-            PageTitle(text:"Lesson Complete!")
-            Text("You explored \(ContentRepository.lessons[id].title.lowercased()).")
-            QuestCard { Text(ContentRepository.lessons[id].routine) }
-            Text("Now put the strategy to work. Each completed challenge adds a building to your city.").foregroundStyle(AppTheme.muted)
-            QuestButton(title:"Back to home",secondary:true) { app.navigate(.home) }
-            QuestButton(title:"Go to challenges") { app.navigate(.challenges) }
-        }.navigationBarBackButtonHidden()
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 32) {
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 86, weight: .regular))
+                        .foregroundStyle(Color(hex: "24C83F"))
+                        .frame(width: 190, height: 190)
+                        .background(Color(hex: "D9F5DE"), in: Circle())
+                        .accessibilityHidden(true)
+                    Text("Lesson Complete!")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, max(40, geometry.size.height * 0.16))
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 12) {
+                QuestButton(title: "Back to home", secondary: true) { app.navigate(.home) }
+                QuestButton(title: "Go to challenge") { app.navigate(.challenges) }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
+            .frame(maxWidth: 600)
+            .frame(maxWidth: .infinity)
+            .background(AppTheme.background)
+        }
+        .background(AppTheme.background)
+        .navigationBarBackButtonHidden()
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
+
+#if DEBUG
+#Preview("LessonReaderView") {
+    PreviewScreen() { LessonReaderView(id: 0) }
+}
+
+#Preview("LessonDemonstration") {
+    PreviewScreen() { LessonDemonstration(id: 0, subject: .computerScience, page: ContentRepository.lessons[0].pages[2], model: LessonViewModel(step: 2)) }
+}
+
+#Preview("GuidedPractice") {
+    PreviewScreen() { GuidedPractice(id: 0, subject: .computerScience, model: LessonViewModel(step: 3)) }
+}
+
+#Preview("ChoiceButton") {
+    PreviewScreen() { ChoiceButton(title: "Stack", selected: true, action: {}) }
+}
+
+#Preview("LessonCompleteView") {
+    PreviewScreen() { LessonCompleteView(id: 0) }
+}
+#endif

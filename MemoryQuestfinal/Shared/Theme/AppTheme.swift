@@ -1,13 +1,13 @@
 import SwiftUI
 
 enum AppTheme {
-    static let background = Color(hex: "fafafa")
-    static let coral = Color(hex: "ff5b57")
-    static let ink = Color(hex: "101114")
-    static let muted = Color(hex: "66666d")
-    static let line = Color(hex: "e8e8eb")
-    static let radius: CGFloat = 17
-    static let padding: CGFloat = 18
+    static let background = Color("AppBackground")
+    static let coral = Color("AccentColor")
+    static let ink = Color("TextPrimary")
+    static let muted = Color("TextSecondary")
+    static let line = Color("Border")
+    static let radius: CGFloat = 12
+    static let padding: CGFloat = 20
 }
 extension Color {
     init(hex: String) {
@@ -31,13 +31,13 @@ struct QuestButton: View {
 }
 struct QuestCard<Content: View>: View {
     @ViewBuilder let content: Content
-    var body: some View { VStack(alignment: .leading, spacing: 12) { content }.frame(maxWidth: .infinity, alignment: .leading).padding(18).background(.white, in: RoundedRectangle(cornerRadius: AppTheme.radius)).shadow(color: .black.opacity(0.025), radius: 14, y: 7) }
+    var body: some View { VStack(alignment: .leading, spacing: 12) { content }.frame(maxWidth: .infinity, alignment: .leading).padding(18).background(Color("CardBackground"), in: RoundedRectangle(cornerRadius: AppTheme.radius)) }
 }
 struct QuestPage<Content: View>: View {
     @ViewBuilder let content: Content
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 20) { content }.frame(maxWidth: 600).frame(maxWidth: .infinity).padding(AppTheme.padding) }
-            .scrollDismissesKeyboard(.interactively).background(AppTheme.background)
+            .scrollIndicators(.hidden).scrollDismissesKeyboard(.interactively).background(AppTheme.background)
     }
 }
 struct PageTitle: View {
@@ -66,3 +66,34 @@ struct AnswerField: View {
             .background(.white, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.line))
     }
 }
+
+#if DEBUG
+#Preview("QuestButton") {
+    PreviewScreen() { QuestButton(title: "Start", action: {}) }
+}
+
+#Preview("QuestCard") {
+    PreviewScreen() { QuestCard { Text("Your learning journey") } }
+}
+
+#Preview("QuestPage") {
+    PreviewScreen() { QuestPage { PageTitle(text: "Progress") } }
+}
+
+#Preview("PageTitle") {
+    PreviewScreen() { PageTitle(text: "Challenges") }
+}
+
+#Preview("SubjectPicker") {
+    PreviewScreen() { SubjectPicker() }
+}
+
+#Preview("FeedbackView") {
+    PreviewScreen() { FeedbackView(text: "You retrieved it!", correct: true) }
+}
+
+#Preview("AnswerField") {
+    @Previewable @State var answer = ""
+    PreviewScreen() { AnswerField(text: $answer) }
+}
+#endif
