@@ -79,7 +79,11 @@ struct WelcomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                CityIllustration(buildings: Set(0..<10), fadesTop: false)
+                CityIllustration(
+                    buildings: Set(0..<10),
+                    aspectRatio: 405.0 / 430.0,
+                    initialVerticalOffset: 50
+                )
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                 WelcomeNameForm(name: $name) {

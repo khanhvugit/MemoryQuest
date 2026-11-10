@@ -31,13 +31,15 @@ struct BuildingArt: View {
 struct CityIllustration: View {
     let buildings: Set<Int>
     var fadesTop = true
+    var aspectRatio: CGFloat = 405.0 / 370.0
+    var initialVerticalOffset: CGFloat = 0
     var select: (Int) -> Void = { _ in }
     private var unlockedPlotIDs: Set<String> { Set(buildings.map { String($0) }) }
     var body: some View {
-        BoundedMapScrollView(unlockedPlotIDs: unlockedPlotIDs, select: select)
+        BoundedMapScrollView(unlockedPlotIDs: unlockedPlotIDs, initialVerticalOffset: initialVerticalOffset, select: select)
             .accessibilityLabel("City map")
             .accessibilityHint("Drag to explore. Pinch to zoom in or out.")
-        .aspectRatio(405.0 / 370.0, contentMode: .fit)
+        .aspectRatio(aspectRatio, contentMode: .fit)
         .clipped()
         // Keep the feathered edges fixed to the viewport as the map moves.
         .mask {
@@ -60,10 +62,11 @@ struct CityIllustration: View {
 // UIKit owns both gestures so dragging and pinching share one coordinate space.
 private struct BoundedMapScrollView: UIViewRepresentable {
     let unlockedPlotIDs: Set<String>
+    var initialVerticalOffset: CGFloat = 0
     let select: (Int) -> Void
 
     func makeUIView(context: Context) -> MapScrollView {
-        MapScrollView()
+        MapScrollView(initialVerticalOffset: initialVerticalOffset)
     }
 
     func updateUIView(_ scrollView: MapScrollView, context: Context) {
@@ -75,10 +78,12 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
     private let canvas = UIView(frame: CGRect(origin: .zero, size: CityRoadLayout.canvasSize))
     private let mapImageView = CityRoadCanvasView()
     private var previousViewport = CGSize.zero
+    private let initialVerticalOffset: CGFloat
     private let plotViews = CityPlot.reserved.sorted { $0.groundCenter.y < $1.groundCenter.y }
         .map { CityPlotView(plot: $0) }
 
-    init() {
+    init(initialVerticalOffset: CGFloat) {
+        self.initialVerticalOffset = initialVerticalOffset
         super.init(frame: .zero)
         delegate = self
         bounces = false
@@ -133,7 +138,10 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
         minimumZoomScale = max(bounds.width / canvas.bounds.width, bounds.height / canvas.bounds.height)
         maximumZoomScale = minimumZoomScale * 4
         setZoomScale(min(maximumZoomScale, minimumZoomScale * (firstLayout ? 1.5 : relativeZoom)), animated: false)
-        let target = firstLayout ? CGPoint(x: canvas.bounds.midX, y: canvas.bounds.midY) : center
+        // Shift the initial framing without leaving an empty strip above the map.
+        let target = firstLayout
+            ? CGPoint(x: canvas.bounds.midX, y: canvas.bounds.midY - initialVerticalOffset / zoomScale)
+            : center
         contentOffset = CGPoint(
             x: min(max(0, target.x * zoomScale - bounds.width / 2), max(0, contentSize.width - bounds.width)),
             y: min(max(0, target.y * zoomScale - bounds.height / 2), max(0, contentSize.height - bounds.height))
