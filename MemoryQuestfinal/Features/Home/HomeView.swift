@@ -3,35 +3,113 @@ import SwiftUI
 struct HomeView: View {
     @Environment(ProgressStore.self) private var store
     @Environment(AppState.self) private var app
+
     var body: some View {
-        let nextChallenge = ContentRepository.challenges.first { store.progress.completedLessons.contains($0.l) && !store.progress.buildings.contains($0.id) }
-        let nextLesson = ContentRepository.lessons.first { !store.progress.completedLessons.contains($0.id) } ?? ContentRepository.lessons[4]
-        QuestPage {
-            HStack { Label("MemoryQuest",systemImage:"brain").font(.headline).foregroundStyle(.purple); Spacer(); Button { app.path.append(.settings) } label: { Image(systemName:"slider.horizontal.3").padding(12).background(.white,in:Circle()) }.accessibilityLabel("Settings") }
-            PageTitle(text:"Morning, \(store.progress.name)")
-            Text("A little practice. Something to build on.").font(.subheadline).foregroundStyle(AppTheme.muted)
-            CityIllustration(buildings:store.progress.buildings) { app.path.append(.building($0)) }
-            Button { app.path.append(.city(false)) } label: {
-                QuestCard { HStack { Text("My City").font(.title3.bold()); Spacer(); Image(systemName:"chevron.right") }; Text("\(store.progress.buildings.count) of 10 buildings · \(store.progress.buildings.count*10)% built").foregroundStyle(AppTheme.muted); ProgressView(value:Double(store.progress.buildings.count),total:10) }
-            }.buttonStyle(.plain)
-            HStack { Text(nextChallenge == nil ? "Your next lesson" : "Ready to practise").font(.title3.bold()); Spacer(); Text("\(store.progress.completion)% journey").font(.caption).foregroundStyle(AppTheme.muted) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Morning, \(store.progress.name)")
+                        .font(.largeTitle.bold())
+                    Spacer()
+                    Button { app.path.append(.settings) } label: {
+                        Image(systemName: "slider.horizontal.3")
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("Settings")
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 28)
+
+                CityIllustration(buildings: store.progress.buildings) {
+                    app.path.append(.building($0))
+                }
+                .padding(.top, 14)
+
+                HomeCityProgress(count: store.progress.buildings.count) {
+                    app.path.append(.city(false))
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, -12)
+
+                HomeSuggestions()
+                    .padding(.horizontal, 22)
+                    .padding(.top, 24)
+            }
+            .padding(.bottom, 28)
+            .frame(maxWidth: 644)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollIndicators(.hidden)
+        .background(AppTheme.background)
+    }
+}
+
+private struct HomeCityProgress: View {
+    let count: Int
+    let open: () -> Void
+
+    var body: some View {
+        Button(action: open) {
             QuestCard {
-                Text("Lesson \((nextChallenge?.l ?? nextLesson.id)+1) · \(nextChallenge == nil ? "4–6 min" : "Challenge ready")").font(.caption).foregroundStyle(AppTheme.muted)
-                Text(nextChallenge?.title ?? nextLesson.short).font(.title2.bold())
-                Text(nextChallenge?.desc ?? nextLesson.desc).font(.subheadline).foregroundStyle(AppTheme.muted)
-                QuestButton(title:store.progress.buildings.count == 10 ? "Review my learning" : "Continue Learning") {
-                    if store.progress.buildings.count == 10 { app.navigate(.progress) }
-                    else if let challenge = nextChallenge { app.path.append(.challenge(challenge.id)) }
-                    else { app.path.append(.lesson(nextLesson.id)) }
+                HStack {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("My City").font(.title2.bold())
+                        Text("\(count * 10)%").font(.title3).foregroundStyle(AppTheme.muted)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                ProgressView(value: Double(count), total: 10)
+                    .tint(Color("ProgressFill"))
+                    .padding(.vertical, 4)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("My City, \(count * 10) percent complete")
+    }
+}
+
+private struct HomeSuggestions: View {
+    @Environment(ProgressStore.self) private var store
+    @Environment(AppState.self) private var app
+
+    var body: some View {
+        let challenge = ContentRepository.challenges.first {
+            store.progress.completedLessons.contains($0.l) && !store.progress.buildings.contains($0.id)
+        }
+        let lesson = ContentRepository.lessons.first {
+            !store.progress.completedLessons.contains($0.id)
+        } ?? ContentRepository.lessons[4]
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Suggestions").font(.title2.bold()).padding(.horizontal, 4)
+            Button {
+                if store.progress.buildings.count == 10 {
+                    app.navigate(.progress)
+                } else if let challenge {
+                    app.path.append(.challenge(challenge.id))
+                } else {
+                    app.path.append(.lesson(lesson.id))
+                }
+            } label: {
+                QuestCard {
+                    HStack(spacing: 16) {
+                        Image(systemName: "play")
+                            .font(.title.weight(.light))
+                            .foregroundStyle(AppTheme.coral)
+                            .frame(width: 58, height: 58)
+                            .background(Color("AccentCoralSoft"), in: RoundedRectangle(cornerRadius: 9))
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(store.progress.buildings.count == 10 ? "Learning progress" : "Lesson \((challenge?.l ?? lesson.id) + 1)")
+                                .font(.title3.weight(.medium))
+                            Text(store.progress.buildings.count == 10 ? "Review my learning" : challenge?.title ?? lesson.short)
+                                .font(.body.weight(.medium))
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                    }
                 }
             }
-            Text("Recent achievements").font(.title3.bold())
-            QuestCard {
-                if let attempt = store.progress.attempts.last {
-                    Label("\(ContentRepository.challenges[attempt.challengeID].building) constructed",systemImage:"rosette").font(.headline)
-                    Text(attempt.date.formatted(date:.abbreviated,time:.omitted)).font(.caption)
-                } else { Text("Your story starts here."); Text("Complete your first challenge to build the Library.").font(.caption).foregroundStyle(AppTheme.muted) }
-            }
+            .buttonStyle(.plain)
         }
     }
 }
