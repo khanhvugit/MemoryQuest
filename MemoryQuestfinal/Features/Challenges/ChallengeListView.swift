@@ -30,7 +30,9 @@ struct ChallengeRow: View {
                     VStack(alignment:.leading,spacing:6) {
                         Text(challenge.title).font(.headline)
                         Text(challenge.desc.replacingOccurrences(of:"CS",with:store.progress.subject == .biology ? "Biology" : "CS")).font(.subheadline).foregroundStyle(AppTheme.muted)
-                        Text(locked ? "Complete lesson to start" : latest.map { "Replay · Last \($0.score)%" } ?? "Start").font(.caption).foregroundStyle(AppTheme.muted)
+                        if !locked, let latest {
+                            Text("Replay · Last \(latest.score)%").font(.caption).foregroundStyle(AppTheme.muted)
+                        }
                     }
                     Spacer(minLength:0); Image(systemName:locked ? "lock" : "chevron.right").foregroundStyle(BuildingArt.accent(for: challenge.id))
                 }
@@ -46,7 +48,8 @@ struct ChallengeIntroView: View {
     var body: some View {
         let c = ContentRepository.challenges[id]
         let attempts = store.attempts(id,subject:store.progress.subject)
-        QuestPage {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
             QuestCard {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(c.title).font(.title2.bold())
@@ -54,36 +57,65 @@ struct ChallengeIntroView: View {
                         .font(.caption).foregroundStyle(AppTheme.muted)
                 }
                 BuildingArt(id: id)
-                    .frame(height: 180)
+                    .frame(height: 130)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                HStack(spacing: 24) {
-                    Label(c.mins, systemImage: "clock")
-                    Rectangle().frame(width: 1, height: 20)
-                    Label(activityCount, systemImage: "target")
-                }
+                    .padding(.vertical, 4)
+                Text(c.desc.replacingOccurrences(
+                    of: "CS",
+                    with: store.progress.subject == .biology ? "Biology" : "CS"
+                ))
                 .font(.subheadline)
-                .foregroundStyle(BuildingArt.accent(for: id))
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 6)
+                .foregroundStyle(AppTheme.muted)
+                Divider()
+                MetricRow(title: "Time", value: c.mins)
+                MetricRow(title: "Activities", value: activityCount)
+                MetricRow(title: "Pass requirement", value: "90% accuracy", showsDivider: false)
             }
-            .padding(.top, 24)
             if store.progress.completedLessons.contains(c.l) {
                 Text("Choose difficulty").font(.title3.weight(.semibold))
                     .padding(.top, 6)
                 DifficultySelector(selection: $difficulty)
-                QuestButton(title: attempts.isEmpty ? "Start" : "Replay challenge") {
-                    app.path.append(.session(id, store.progress.subject, difficulty))
-                }
             } else {
-                Text("Start with Lesson \(c.l+1) to learn the strategy.").padding().background(Color(hex:ContentRepository.lessons[c.l].soft),in:RoundedRectangle(cornerRadius:12))
-                QuestButton(title:"Learn \(ContentRepository.lessons[c.l].short)") { app.path.append(.lesson(c.l)) }
+                Text("Start with Lesson \(c.l+1) to learn the strategy.")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.muted)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
             }
-            if let last = attempts.last {
-                QuestButton(title:"Previous results",secondary:true) { app.path.append(.history(id)) }
-                Text("Last: \(last.score)% · Best: \(attempts.map(\.score).max() ?? 0)%").font(.caption).foregroundStyle(AppTheme.muted).frame(maxWidth:.infinity)
             }
-        }.navigationTitle("Challenge")
+            .frame(maxWidth: 600)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, AppTheme.padding)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+        .scrollIndicators(.hidden)
+        .background(AppTheme.background)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 12) {
+                if store.progress.completedLessons.contains(c.l) {
+                    QuestButton(title: attempts.isEmpty ? "Start" : "Replay challenge") {
+                        app.path.append(.session(id, store.progress.subject, difficulty))
+                    }
+                } else {
+                    QuestButton(title: "Learn \(ContentRepository.lessons[c.l].short)") {
+                        app.path.append(.lesson(c.l))
+                    }
+                }
+                if !attempts.isEmpty {
+                    QuestButton(title: "Previous results", secondary: true) {
+                        app.path.append(.history(id))
+                    }
+                }
+            }
+            .frame(maxWidth: 600)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, AppTheme.padding)
+            .padding(.vertical, 16)
+            .background(AppTheme.background)
+        }
+        .navigationTitle("Challenge")
     }
 
     private var activityCount: String {

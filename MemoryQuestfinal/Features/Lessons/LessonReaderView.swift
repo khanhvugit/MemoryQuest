@@ -10,12 +10,12 @@ struct LessonReaderView: View {
         let lesson = ContentRepository.lessons[id]
         let page = ContentRepository.page(lesson:id,step:model.step,subject:store.progress.subject)
         QuestPage {
-            HStack(spacing:6) { ForEach(0..<5) { i in Capsule().fill(i <= model.step ? Color(hex:lesson.deep) : AppTheme.line).frame(height:4) } }.accessibilityLabel("Step \(model.step+1) of 5")
+            HStack(spacing:6) { ForEach(0..<5) { i in Capsule().fill(i <= model.step ? LessonPresentation.foreground(for: lesson) : AppTheme.line).frame(height:4) } }.accessibilityLabel("Step \(model.step+1) of 5")
             PageTitle(text:page.title)
             if model.step == 2 { LessonDemonstration(id:id,subject:store.progress.subject,page:page,model:model) }
-            else { LessonBodyView(page:page,color:Color(hex:lesson.soft)) }
+            else { LessonBodyView(page:page,color:LessonPresentation.background(for: lesson)) }
             if model.step == 3 { GuidedPractice(id:id,subject:store.progress.subject,model:model) }
-            if model.step == 4 { Text(lesson.routine).padding(16).frame(maxWidth:.infinity,alignment:.leading).background(Color(hex:lesson.soft),in:RoundedRectangle(cornerRadius:12)) }
+            if model.step == 4 { Text(lesson.routine).padding(16).frame(maxWidth:.infinity,alignment:.leading).background(LessonPresentation.background(for: lesson),in:RoundedRectangle(cornerRadius:12)) }
             HStack {
                 if model.step > 0 { QuestButton(title:"Previous",secondary:true) { move(model.step-1) } }
                 QuestButton(title:model.step == 4 ? "Complete lesson" : "Next",disabled:model.step == 3 && !model.passed) {
@@ -24,6 +24,7 @@ struct LessonReaderView: View {
                 }
             }.padding(.top,12)
         }.id(model.step).navigationTitle("Lesson \(id+1)")
+            .tint(LessonPresentation.foreground(for: lesson))
             .onAppear { if !loaded { model.step = store.progress.completedLessons.contains(id) ? 0 : store.progress.lessonSteps[id,default:0]; loaded = true } }
             .onChange(of:store.progress.subject) { model.resetPractice() }
     }
@@ -41,14 +42,14 @@ struct LessonDemonstration: View {
     }
     var body: some View {
         VStack(alignment:.leading,spacing:18) {
-            if !model.revealed || ![0,1].contains(id) { LessonBodyView(page:page,color:Color(hex:ContentRepository.lessons[id].soft)) }
+            if !model.revealed || ![0,1].contains(id) { LessonBodyView(page:page,color:LessonPresentation.background(for: ContentRepository.lessons[id])) }
             else { Text(id == 0 ? "Definition hidden. Retrieve the rule first, then check the answer below." : "The groups are hidden. Can you reconstruct them?") }
             if id == 3 {
-                LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:7)) { ForEach(1..<15) { day in Text("\(day)").frame(maxWidth:.infinity).padding(8).background([1,2,4,7].contains(day) ? Color(hex:"e4f4e3") : .white,in:RoundedRectangle(cornerRadius:6)) } }
+                LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:7)) { ForEach(1..<15) { day in Text("\(day)").frame(maxWidth:.infinity).padding(8).background([1,2,4,7].contains(day) ? LessonPresentation.background(for: ContentRepository.lessons[id]) : .white,in:RoundedRectangle(cornerRadius:6)) } }
             }
             if model.revealed {
                 Text(revealedText)
-                    .padding(16).background(Color(hex:ContentRepository.lessons[id].soft),in:RoundedRectangle(cornerRadius:12))
+                    .padding(16).background(LessonPresentation.background(for: ContentRepository.lessons[id]),in:RoundedRectangle(cornerRadius:12))
             } else {
                 QuestButton(title:["Hide definition & reveal the answer","Hide the groups & test yourself","Reveal a self-check question","Reveal a review decision","Reveal another application"][id],secondary:true) { model.revealed = true }
             }
@@ -75,9 +76,9 @@ struct GuidedPractice: View {
     var body: some View {
         QuestCard {
             if id == 0 { Text("Your answer"); AnswerField(text:$model.answer,prompt:subject == .biology ? "Type the cell structure" : "Type the data structure") }
-            else { ForEach(Array(choices.enumerated()),id:\.element) { i,choice in ChoiceButton(title:choice,selected:model.choice == i) { model.choice = i } } }
+            else { ForEach(Array(choices.enumerated()),id:\.element) { i,choice in ChoiceButton(title:choice,selected:model.choice == i, accent: LessonPresentation.foreground(for: ContentRepository.lessons[id])) { model.choice = i } } }
             QuestButton(title:"Check my answer",secondary:true,disabled:id == 0 ? model.answer.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty : model.choice < 0) { model.check(id:id,subject:subject) }
-            Button("Show a hint") { model.hint = true }.foregroundStyle(Color(hex:ContentRepository.lessons[id].deep))
+            Button("Show a hint") { model.hint = true }.foregroundStyle(LessonPresentation.foreground(for: ContentRepository.lessons[id]))
             if model.hint { Text(hintText).font(.subheadline).foregroundStyle(AppTheme.muted) }
             if let feedback = model.feedback { FeedbackView(text:feedback,correct:model.passed) }
         }
@@ -86,8 +87,9 @@ struct GuidedPractice: View {
 struct ChoiceButton: View {
     let title: String
     let selected: Bool
+    var accent: Color = AppTheme.coral
     let action: () -> Void
-    var body: some View { Button(action:action) { HStack { Text(title).multilineTextAlignment(.leading); Spacer(); if selected { Image(systemName:"checkmark.circle.fill") } }.padding(14).frame(maxWidth:.infinity,alignment:.leading).background(selected ? AppTheme.coral.opacity(0.12) : .white,in:RoundedRectangle(cornerRadius:10)).overlay(RoundedRectangle(cornerRadius:10).stroke(selected ? AppTheme.coral : AppTheme.line)) }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : []) }
+    var body: some View { Button(action:action) { HStack { Text(title).multilineTextAlignment(.leading); Spacer(); if selected { Image(systemName:"checkmark.circle.fill").foregroundStyle(accent) } }.padding(14).frame(maxWidth:.infinity,alignment:.leading).background(selected ? accent.opacity(0.12) : .white,in:RoundedRectangle(cornerRadius:10)).overlay(RoundedRectangle(cornerRadius:10).stroke(selected ? accent : AppTheme.line)) }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : []) }
 }
 struct LessonCompleteView: View {
     let id: Int

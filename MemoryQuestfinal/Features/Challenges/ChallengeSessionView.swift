@@ -37,11 +37,15 @@ struct ChallengeSessionView: View {
                         }
                     }
                 }.id("\(model.stage)-\(model.index)-\(model.retried)")
-                    .onChange(of:model.finished) {
-                        if let attempt=model.finish(store:store) { app.path.removeLast(); app.path.append(.result(attempt.id)) }
-                    }
+
             } else { ProgressView().onAppear { model=ChallengeSessionViewModel(id:id,subject:subject,difficulty:difficulty,history:store.progress.attempts) } }
-        }.navigationTitle(ContentRepository.challenges[id].title)
+        }
+        .navigationTitle(ContentRepository.challenges[id].title)
+        .onChange(of: model?.finished) {
+            guard let model, let attempt = model.finish(store: store) else { return }
+            // Replace the session in one navigation update.
+            app.path = Array(app.path.dropLast()) + [.result(attempt.id)]
+        }
     }
 }
 struct StudyActivityView: View {
@@ -52,7 +56,17 @@ struct StudyActivityView: View {
             case 0:
                 PageTitle(text:"Make a first connection")
                 Text("Read each term and its meaning. Then hide the list and retrieve the words from memory.").font(.subheadline).foregroundStyle(AppTheme.muted)
-                QuestCard { ForEach(model.deck,id:\.concept.id) { item in Text(item.concept.term).font(.headline); Text(item.concept.def).font(.subheadline) } }
+                QuestCard {
+                    ForEach(model.deck, id: \.concept.id) { item in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(item.concept.term).font(.headline)
+                            Text(item.concept.def).font(.subheadline)
+                            if item.concept.id != model.deck.last?.concept.id {
+                                Divider()
+                            }
+                        }
+                    }
+                }
                 QuestButton(title:"Hide terms & begin recall") { model.beginRecall() }
             case 2: GroupingActivityView(model:model)
             case 3:

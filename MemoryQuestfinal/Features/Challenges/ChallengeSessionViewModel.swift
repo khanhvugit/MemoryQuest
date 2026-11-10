@@ -94,9 +94,8 @@ struct ReviewConcept {
         guard groups.count == links.count, groups.values.allSatisfy({ (0..<links.count).contains($0) }) else { validation="Select an analogy for every concept."; return }
         var count=0
         for i in links.indices {
-            let link=links[i], chosen=groups[i,default:0], correct=chosen == i
+            let chosen=groups[i,default:0], correct=chosen == i
             if correct { count += 1 }
-            record(link.term,answer:links[chosen].cue,expected:link.cue,correct:correct,explanation:link.why)
         }
         feedbackCorrect=count == links.count
         feedback="\(count)/\(links.count) connections matched.\n\n"+links.map { "\($0.term) → \($0.cue)\n\($0.why)" }.joined(separator:"\n\n")
@@ -168,11 +167,27 @@ struct ReviewConcept {
         }
     }
     func advance() {
-        index += 1; order=[]; feedback=nil; answer=""; choice = -1; hint=false; flipped=false
-        if index >= total {
-            if id == 7 && !retried && !retry.isEmpty { deck=retry; retry=[]; retried=true; index=0 }
-            else { finished=true }
+        guard !finished else { return }
+        if index + 1 >= total {
+            if id == 7 && !retried && !retry.isEmpty {
+                index = 0
+                deck = retry
+                retry = []
+                retried = true
+            } else {
+                // Keep the last question valid while its view leaves the hierarchy.
+                finished = true
+                return
+            }
+        } else {
+            index += 1
         }
+        order = []
+        feedback = nil
+        answer = ""
+        choice = -1
+        hint = false
+        flipped = false
     }
     func finish(store: ProgressStore) -> ChallengeAttempt? {
         guard finished else { return nil }

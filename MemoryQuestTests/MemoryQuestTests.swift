@@ -7,6 +7,27 @@ import Testing
         ProgressStore(url: FileManager.default.temporaryDirectory.appending(path: "MemoryQuest-\(UUID().uuidString)/progress.json"))
     }
 
+    @Test func passingThresholdControlsBuildingUnlocks() {
+        let persistence = store()
+        func attempt(correct: Int, total: Int = 100) -> ChallengeAttempt {
+            ChallengeAttempt(id: UUID(), challengeID: 0, subject: .computerScience, difficulty: .medium,
+                             date: Date(), duration: 10,
+                             results: (0..<total).map { index in
+                                 QuestionResult(conceptID: "\(index)", term: "Term", answer: "", expected: "",
+                                                explanation: "", correct: index < correct)
+                             }, selfRated: false)
+        }
+        #expect(!attempt(correct: 0, total: 0).passed)
+        #expect(!attempt(correct: 179, total: 200).passed)
+        #expect(!persistence.record(attempt(correct: 89)))
+        #expect(persistence.progress.buildings.isEmpty)
+        #expect(persistence.record(attempt(correct: 90)))
+        #expect(persistence.progress.buildings == [0])
+        #expect(!persistence.record(attempt(correct: 50)))
+        #expect(persistence.progress.buildings == [0])
+        #expect(persistence.progress.attempts.count == 3)
+    }
+
     @Test func normalisationAndAliases() {
         let content = ContentRepository.computerScience
         #expect(Answer.correct("  BOOL  ", concept: content.terms[7]))
@@ -42,14 +63,30 @@ import Testing
         let attempt = session.finish(store: persistence)
         #expect(attempt?.score == 10)
         #expect(attempt?.results.count == 10)
-        #expect(persistence.progress.buildings == [0])
+        #expect(persistence.progress.buildings.isEmpty)
         _ = session.finish(store: persistence)
         #expect(persistence.progress.attempts.count == 1)
     }
 
+    @Test func completingSessionKeepsLastQuestionValid() {
+        let session = ChallengeSessionViewModel(id: 0, subject: .computerScience, difficulty: .easy, history: [])
+        session.beginRecall()
+        for _ in 0..<session.total {
+            session.answer = session.deck[session.index].concept.term
+            session.check()
+            session.advance()
+        }
+        #expect(session.finished)
+        #expect(session.index == session.deck.count - 1)
+        let count = session.results.count
+        session.advance()
+        #expect(session.index == session.deck.count - 1)
+        #expect(session.results.count == count)
+    }
+
     @Test func subjectHistoryAndBuildingsStaySeparate() {
         let persistence = store()
-        let result = QuestionResult(conceptID: "stack", term: "Stack", answer: "Queue", expected: "Stack", explanation: "", correct: false)
+        let result = QuestionResult(conceptID: "stack", term: "Stack", answer: "Stack", expected: "Stack", explanation: "", correct: true)
         let first = ChallengeAttempt(id: UUID(), challengeID: 0, subject: .computerScience, difficulty: .easy, date: Date().addingTimeInterval(-172800), duration: 12, results: [result], selfRated: false)
         #expect(persistence.record(first))
         var biology = first
@@ -198,7 +235,7 @@ import Testing
                 for index in session.links.indices { session.groups[index] = index }
                 session.checkLinks()
                 #expect(session.feedbackCorrect)
-                #expect(session.results.count == difficulty.questionCount)
+                #expect(session.results.isEmpty)
                 let grouping = ChallengeSessionViewModel(id: 2, subject: subject, difficulty: difficulty, history: [])
                 for index in grouping.groupedTerms.indices { grouping.groups[index] = grouping.groupedTerms[index].category }
                 grouping.checkGroups()

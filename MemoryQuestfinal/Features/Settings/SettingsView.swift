@@ -15,18 +15,14 @@ struct SettingsView: View {
                 if store.progress.name.isEmpty { store.progress.name="Alex" }
                 store.save(); app.navigate(.home)
             }
-            SubjectPicker()
             QuestCard {
                 Text("Completed city preview").font(.headline)
-                Text("Explore all ten buildings without changing your lesson, challenge, or score history.").font(.subheadline).foregroundStyle(AppTheme.muted)
                 QuestButton(title:"Preview completed city",secondary:true) { app.path.append(.city(true)) }
             }
             QuestCard {
                 Text("Start fresh").font(.headline)
-                Text("Reset lessons, scores, and buildings on this device.").font(.subheadline).foregroundStyle(AppTheme.muted)
                 QuestButton(title:"Reset Progress",secondary:true) { confirmReset=true }
             }
-            Text("Progress is kept on this device. The app works offline.").font(.caption).foregroundStyle(AppTheme.muted)
         }.navigationTitle("Settings").onAppear { name=store.progress.name }
             .confirmationDialog("Start a fresh city?",isPresented:$confirmReset,titleVisibility:.visible) {
                 Button("Reset Progress",role:.destructive) { store.reset(); app.navigate(.home) }

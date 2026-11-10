@@ -30,6 +30,7 @@ struct BuildingArt: View {
 // The expanded canvas scrolls vertically and horizontally even at the default zoom.
 struct CityIllustration: View {
     let buildings: Set<Int>
+    var fadesTop = true
     var select: (Int) -> Void = { _ in }
     private var unlockedPlotIDs: Set<String> { Set(buildings.map { String($0) }) }
     var body: some View {
@@ -42,8 +43,8 @@ struct CityIllustration: View {
         .mask {
             LinearGradient(
                 stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black.opacity(0.25), location: 0.04),
+                    .init(color: fadesTop ? .clear : .black, location: 0),
+                    .init(color: .black.opacity(fadesTop ? 0.25 : 1), location: 0.04),
                     .init(color: .black, location: 0.16),
                     .init(color: .black, location: 0.82),
                     .init(color: .black.opacity(0.25), location: 0.96),

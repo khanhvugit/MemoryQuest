@@ -29,7 +29,7 @@ struct LessonListView: View {
     }
 }
 
-private struct LessonListCard: View {
+struct LessonListCard: View {
     let lesson: Lesson
 
     var body: some View {
@@ -58,7 +58,7 @@ private struct LessonListCard: View {
     }
 }
 
-private enum LessonPresentation {
+enum LessonPresentation {
     static func title(for lesson: Lesson) -> String {
         switch lesson.id {
         case 0: "Active Recalling"

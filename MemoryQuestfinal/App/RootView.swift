@@ -3,8 +3,8 @@ import SwiftUI
 struct RootView: View {
     @State private var store: ProgressStore
 
-    init(store: ProgressStore = ProgressStore()) {
-        _store = State(initialValue: store)
+    init(store: ProgressStore? = nil) {
+        _store = State(initialValue: store ?? ProgressStore())
     }
     @State private var app = AppState()
     var body: some View {
@@ -14,10 +14,30 @@ struct RootView: View {
                 if !store.progress.welcomed { WelcomeView() }
                 else {
                     TabView(selection: $app.tab) {
-                        Tab("Home", systemImage: "house", value: AppTab.home) { HomeView() }
-                        Tab("Lessons", systemImage: "book", value: AppTab.lessons) { LessonListView() }
-                        Tab("Challenges", systemImage: "medal", value: AppTab.challenges) { ChallengeListView() }
-                        Tab("Progress", systemImage: "chart.bar.xaxis", value: AppTab.progress) { LearningProgressView() }
+                        Tab(value: AppTab.home) {
+                            HomeView()
+                        } label: {
+                            Label("Home", systemImage: app.tab == .home ? "house.fill" : "house")
+                                .environment(\.symbolVariants, .none)
+                        }
+                        Tab(value: AppTab.lessons) {
+                            LessonListView()
+                        } label: {
+                            Label("Lessons", systemImage: app.tab == .lessons ? "book.fill" : "book")
+                                .environment(\.symbolVariants, .none)
+                        }
+                        Tab(value: AppTab.challenges) {
+                            ChallengeListView()
+                        } label: {
+                            Label("Challenges", systemImage: app.tab == .challenges ? "medal.fill" : "medal")
+                                .environment(\.symbolVariants, .none)
+                        }
+                        Tab(value: AppTab.progress) {
+                            LearningProgressView()
+                        } label: {
+                            Label("Progress", systemImage: app.tab == .progress ? "chart.bar.fill" : "chart.bar")
+                                .environment(\.symbolVariants, .none)
+                        }
                     }
                 }
             }
@@ -55,17 +75,42 @@ struct DestinationView: View {
 struct WelcomeView: View {
     @Environment(ProgressStore.self) private var store
     @State private var name = "Alex"
+
     var body: some View {
-        QuestPage {
-            Label("MemoryQuest",systemImage:"brain").font(.headline).foregroundStyle(.purple)
-            CityIllustration(buildings:Set(0..<10)).allowsHitTesting(false)
-            PageTitle(text:"Little lessons.\nA city of progress.")
-            Text("Discover memory strategies, practise with computer science or biology, and build something you can be proud of.").foregroundStyle(AppTheme.muted)
-            Text("5 memory strategies · 10 buildings to unlock").font(.caption)
+        ScrollView {
+            VStack(spacing: 0) {
+                CityIllustration(buildings: Set(0..<10), fadesTop: false)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                WelcomeNameForm(name: $name) {
+                    store.progress.name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
+                    if store.progress.name.isEmpty { store.progress.name = "Alex" }
+                    store.progress.welcomed = true
+                    store.save()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
+                .frame(maxWidth: 600)
+            }
+        }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .background(AppTheme.background)
+        .ignoresSafeArea(.container, edges: [.top, .horizontal])
+    }
+}
+
+private struct WelcomeNameForm: View {
+    @Binding var name: String
+    let start: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            PageTitle(text: "Little lessons.\nA city of progress.")
             Text("What should we call you?")
-            AnswerField(text:$name,prompt:"Your name")
-            QuestButton(title:"Start my city") { store.progress.name = String(name.trimmingCharacters(in:.whitespacesAndNewlines).prefix(24)); if store.progress.name.isEmpty { store.progress.name = "Alex" }; store.progress.welcomed = true; store.save() }
-            Text("Your city grows one completed challenge at a time.").font(.caption).foregroundStyle(AppTheme.muted)
+            AnswerField(text: $name, prompt: "Your name")
+            QuestButton(title: "Start my city", action: start)
         }
     }
 }

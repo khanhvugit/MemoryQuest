@@ -443,7 +443,7 @@
         {
           "name": "Not consumed",
           "patterns": [
-            "not consumed|reus|unchanged|not used up"
+            "not consumed|without being consumed|reus|unchanged|not used up"
           ],
           "all": false
         }

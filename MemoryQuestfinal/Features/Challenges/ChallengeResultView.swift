@@ -8,12 +8,20 @@ struct ChallengeResultView: View {
 
     var body: some View {
         if let attempt = store.progress.attempts.first(where: { $0.id == attemptID }) {
-            let isNew = store.progress.attempts.first(where: { $0.challengeID == attempt.challengeID })?.id == attemptID
+            let isNew = store.progress.attempts.first(where: { $0.challengeID == attempt.challengeID && $0.passed })?.id == attemptID
             CelebrationPage {
                 VStack(spacing: 20) {
-                    CompletionTrophy()
-                        .frame(width: 200, height: 190)
-                    Text("Challenge Complete!")
+                    if attempt.passed {
+                        CompletionTrophy()
+                            .frame(width: 200, height: 190)
+                    } else {
+                        Image(systemName: "arrow.clockwise.circle")
+                            .font(.system(size: 100))
+                            .foregroundStyle(AppTheme.muted)
+                            .frame(width: 200, height: 190)
+                    }
+                    Text(attempt.passed ? "Challenge Complete!" : "Keep practising")
+
                         .font(.largeTitle.bold())
                         .tracking(-1)
                         .multilineTextAlignment(.center)
@@ -23,8 +31,17 @@ struct ChallengeResultView: View {
                         duration: attempt.duration
                     )
                     VStack(spacing: 16) {
-                        CelebrationButton(title: isNew ? "Unlock new building" : "View building") {
-                            app.path.append(.reward(attemptID, isNew))
+                        if attempt.passed {
+                            CelebrationButton(title: isNew ? "Unlock new building" : "View building") {
+                                app.path.append(.reward(attemptID, isNew))
+                            }
+                        } else {
+                            CelebrationButton(title: "Try again") {
+                                app.path = Array(app.path.dropLast()) + [.session(attempt.challengeID, attempt.subject, attempt.difficulty)]
+                            }
+                            CelebrationButton(title: "Back to challenges", secondary: true) {
+                                app.navigate(.challenges)
+                            }
                         }
                         CelebrationButton(title: review ? "Hide answer review" : "Review answers", secondary: true) {
                             review.toggle()
@@ -161,7 +178,18 @@ private struct CompletionTrophy: View {
 
 struct MetricRow: View {
     let title, value: String
-    var body: some View { HStack(alignment:.top) { Text(title).foregroundStyle(AppTheme.muted); Spacer(); Text(value).fontWeight(.semibold).multilineTextAlignment(.trailing) }; Divider() }
+    var showsDivider = true
+
+    var body: some View {
+        HStack(alignment: .top) {
+            Text(title).foregroundStyle(AppTheme.muted)
+            Spacer()
+            Text(value).fontWeight(.semibold).multilineTextAlignment(.trailing)
+        }
+        if showsDivider {
+            Divider()
+        }
+    }
 }
 struct AttemptAnswersView: View {
     let results: [QuestionResult]

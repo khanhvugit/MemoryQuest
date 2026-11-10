@@ -45,7 +45,7 @@ struct LearningProgressView: View {
                 ProgressView(value:Double(store.progress.completedLessons.count+store.progress.buildings.count),total:15)
                 Text("Completion of 5 lessons and 10 challenges.").font(.caption).foregroundStyle(AppTheme.muted)
             }
-            LazyVGrid(columns:[GridItem(.flexible()),GridItem(.flexible())],spacing:12) {
+            LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 12) {
                 ProgressMetric(value:"\(store.progress.completedLessons.count)/5",title:"Lessons explored")
                 ProgressMetric(value:"\(store.progress.buildings.count)/10",title:"Buildings constructed")
                 ProgressMetric(value:summary.percentage(summary.results),title:"Accuracy")
@@ -54,36 +54,36 @@ struct LearningProgressView: View {
             if !summary.attempts.isEmpty {
                 DisclosureGroup("Learning details") {
                     VStack(alignment: .leading, spacing: 20) {
-            Text("Completion is shared across subjects. Performance and reviews below are for \(store.progress.subject.title). Self-rated flashcards are excluded from scored accuracy. Checklist coverage uses predefined rules. Delayed recall requires genuine history at least a day earlier; sample history and immediate replays are excluded.").font(.caption).foregroundStyle(AppTheme.muted)
-            AttemptComparisonView(attempts:summary.attempts)
-            Text("Ideas you can now recall").font(.title3.bold())
-            if summary.recovered.isEmpty { Text("Previously missed ideas appear here when you retrieve them correctly.").font(.subheadline).foregroundStyle(AppTheme.muted) }
-            else { QuestCard { ForEach(summary.recovered) { Label($0.term,systemImage:"checkmark.circle").foregroundStyle(.green) }; Text("Missed earlier, correct in your latest recorded check.").font(.caption) } }
-            Text("Practise next").font(.title3.bold())
-            if summary.missed.isEmpty { Text("No outstanding missed ideas yet. Return to completed questions after a delay.").font(.subheadline).foregroundStyle(AppTheme.muted) }
-            else { QuestCard { ForEach(summary.missed.prefix(8)) { result in Text(result.term).font(.headline); Text(result.expected).font(.subheadline).foregroundStyle(AppTheme.muted) } } }
-            Text("Scheduled reviews").font(.title3.bold())
-            if summary.reviews.isEmpty { Text("No scheduled reviews yet. Memory Comeback and Rescue Forgotten Words schedule your next retrieval.").font(.subheadline).foregroundStyle(AppTheme.muted) }
-            else {
-                QuestCard {
-                    if !summary.reviews.contains(where:{ $0.due <= Date() }) { Text("No reviews due today.").font(.headline) }
-                    ForEach(summary.reviews) { review in MetricRow(title:review.term,value:"\(review.due <= Date() ? "Due · " : "")\(review.due.formatted(date:.abbreviated,time:.omitted))") }
-                    QuestButton(title:"Review concepts",secondary:true) { app.path.append(.challenge(6)) }
-                }
-            }
-            Text("Learning milestones").font(.title3.bold())
-            QuestCard {
-                Label(store.progress.buildings.isEmpty ? "Your first building is ahead" : "First building constructed",systemImage:"flag")
-                if store.progress.completedLessons.count == 5 { Label("All five strategies explored",systemImage:"rosette") }
-                if store.progress.buildings.count == 10 { Label("Your complete learning city",systemImage:"trophy") }
-            }
-            Text("Previous challenge results").font(.title3.bold())
-            if summary.attempts.isEmpty { Text("Your results appear after your first challenge.").font(.subheadline).foregroundStyle(AppTheme.muted) }
-            ForEach(ContentRepository.challenges.filter { c in summary.attempts.contains { $0.challengeID == c.id } }) { c in
-                QuestButton(title:c.title,secondary:true) { app.path.append(.history(c.id)) }
-            }
-            QuestButton(title:"Settings",secondary:true) { app.path.append(.settings) }
-            Text("These activities show learning performance, not a measure of general memory ability.").font(.caption).foregroundStyle(AppTheme.muted)
+                        if !summary.missed.isEmpty {
+                            Text("Practise next").font(.headline)
+                            QuestCard {
+                                ForEach(summary.missed.prefix(5)) { result in
+                                    Text(result.term).font(.subheadline)
+                                }
+                            }
+                        }
+                        if !summary.reviews.isEmpty {
+                            Text("Scheduled reviews").font(.headline)
+                            QuestCard {
+                                ForEach(Array(summary.reviews.prefix(3))) { review in
+                                    MetricRow(
+                                        title: review.term,
+                                        value: review.due <= Date() ? "Due now" : review.due.formatted(date: .abbreviated, time: .omitted)
+                                    )
+                                }
+                                QuestButton(title: "Review concepts", secondary: true) {
+                                    app.path.append(.challenge(6))
+                                }
+                            }
+                        }
+                        Text("Previous results").font(.headline)
+                        ForEach(ContentRepository.challenges.filter { challenge in
+                            summary.attempts.contains { $0.challengeID == challenge.id }
+                        }) { challenge in
+                            QuestButton(title: challenge.title, secondary: true) {
+                                app.path.append(.history(challenge.id))
+                            }
+                        }
                     }
                     .padding(.top, 16)
                 }
@@ -95,11 +95,11 @@ struct ProgressMetric: View {
     let value, title: String
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(value).font(.largeTitle.bold())
+            Text(value).font(.largeTitle.bold()).monospacedDigit()
             Text(title).font(.subheadline).foregroundStyle(AppTheme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
         .padding(20)
         .background(Color("CardBackground"), in: RoundedRectangle(cornerRadius: 18))
     }

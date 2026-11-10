@@ -8,7 +8,7 @@ struct StoryActivityView: View {
             Text(model.storyTerms.joined(separator:" · ")).font(.headline)
             QuestCard { Text("A guided example").font(.caption).foregroundStyle(AppTheme.muted); Text(model.content.story) }
             Text("Write your own story using all \(model.storyTerms.count) concepts")
-            AnswerField(text:$model.story,prompt:"Picture a scene and connect the four concepts…",multiline:true)
+            AnswerField(text:$model.story,prompt:"Picture a scene and connect the selected concepts…",multiline:true)
             Text("The keyword check only confirms that you used the target words. It does not assess conceptual understanding.").font(.caption).foregroundStyle(AppTheme.muted)
             QuestButton(title:"Hide my story & recall") { model.hideStory() }
         }
