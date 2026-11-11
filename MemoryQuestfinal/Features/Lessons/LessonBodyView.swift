@@ -29,6 +29,7 @@ struct LessonBodyBlock: View {
             } else {
                 let text=(try? AttributedString(markdown:block.text,options:.init(interpretedSyntax:.inlineOnlyPreservingWhitespace))) ?? AttributedString(block.text)
                 Text(text).lineSpacing(6).fixedSize(horizontal:false,vertical:true)
+                    .foregroundStyle(block.kind == "callout" ? LessonPresentation.textOnPastel : AppTheme.ink)
                     .padding(block.kind == "callout" ? 16 : 0)
                     .frame(maxWidth:.infinity,alignment:.leading)
                     .background(block.kind == "callout" ? color : .clear,in:RoundedRectangle(cornerRadius:12))

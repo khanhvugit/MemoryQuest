@@ -6,9 +6,9 @@ struct LessonListView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HStack {
+                HStack(spacing: 8) {
                     Text("Lessons").font(.largeTitle.bold())
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 0)
                     LessonSubjectMenu()
                 }
                 ForEach(ContentRepository.lessons) { lesson in
@@ -18,7 +18,7 @@ struct LessonListView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, AppTheme.padding)
             .padding(.top, 28)
             .padding(.bottom, 96)
             .frame(maxWidth: 600)
@@ -59,6 +59,8 @@ struct LessonListCard: View {
 }
 
 enum LessonPresentation {
+    static let textOnPastel = Color(hex: "1A1A1A")
+
     static func title(for lesson: Lesson) -> String {
         switch lesson.id {
         case 0: "Active Recalling"

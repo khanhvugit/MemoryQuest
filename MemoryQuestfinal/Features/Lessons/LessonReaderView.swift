@@ -15,7 +15,7 @@ struct LessonReaderView: View {
             if model.step == 2 { LessonDemonstration(id:id,subject:store.progress.subject,page:page,model:model) }
             else { LessonBodyView(page:page,color:LessonPresentation.background(for: lesson)) }
             if model.step == 3 { GuidedPractice(id:id,subject:store.progress.subject,model:model) }
-            if model.step == 4 { Text(lesson.routine).padding(16).frame(maxWidth:.infinity,alignment:.leading).background(LessonPresentation.background(for: lesson),in:RoundedRectangle(cornerRadius:12)) }
+            if model.step == 4 { Text(lesson.routine).foregroundStyle(LessonPresentation.textOnPastel).padding(16).frame(maxWidth:.infinity,alignment:.leading).background(LessonPresentation.background(for: lesson),in:RoundedRectangle(cornerRadius:12)) }
             HStack {
                 if model.step > 0 { QuestButton(title:"Previous",secondary:true) { move(model.step-1) } }
                 QuestButton(title:model.step == 4 ? "Complete lesson" : "Next",disabled:model.step == 3 && !model.passed) {
@@ -45,10 +45,11 @@ struct LessonDemonstration: View {
             if !model.revealed || ![0,1].contains(id) { LessonBodyView(page:page,color:LessonPresentation.background(for: ContentRepository.lessons[id])) }
             else { Text(id == 0 ? "Definition hidden. Retrieve the rule first, then check the answer below." : "The groups are hidden. Can you reconstruct them?") }
             if id == 3 {
-                LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:7)) { ForEach(1..<15) { day in Text("\(day)").frame(maxWidth:.infinity).padding(8).background([1,2,4,7].contains(day) ? LessonPresentation.background(for: ContentRepository.lessons[id]) : .white,in:RoundedRectangle(cornerRadius:6)) } }
+                LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:7)) { ForEach(1..<15) { day in Text("\(day)").foregroundStyle([1,2,4,7].contains(day) ? LessonPresentation.textOnPastel : AppTheme.ink).frame(maxWidth:.infinity).padding(8).background([1,2,4,7].contains(day) ? LessonPresentation.background(for: ContentRepository.lessons[id]) : AppTheme.surface,in:RoundedRectangle(cornerRadius:6)) } }
             }
             if model.revealed {
                 Text(revealedText)
+                    .foregroundStyle(LessonPresentation.textOnPastel)
                     .padding(16).background(LessonPresentation.background(for: ContentRepository.lessons[id]),in:RoundedRectangle(cornerRadius:12))
             } else {
                 QuestButton(title:["Hide definition & reveal the answer","Hide the groups & test yourself","Reveal a self-check question","Reveal a review decision","Reveal another application"][id],secondary:true) { model.revealed = true }
@@ -89,7 +90,7 @@ struct ChoiceButton: View {
     let selected: Bool
     var accent: Color = AppTheme.coral
     let action: () -> Void
-    var body: some View { Button(action:action) { HStack { Text(title).multilineTextAlignment(.leading); Spacer(); if selected { Image(systemName:"checkmark.circle.fill").foregroundStyle(accent) } }.padding(14).frame(maxWidth:.infinity,alignment:.leading).background(selected ? accent.opacity(0.12) : .white,in:RoundedRectangle(cornerRadius:10)).overlay(RoundedRectangle(cornerRadius:10).stroke(selected ? accent : AppTheme.line)) }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : []) }
+    var body: some View { Button(action:action) { HStack { Text(title).multilineTextAlignment(.leading); Spacer(); if selected { Image(systemName:"checkmark.circle.fill").foregroundStyle(accent) } }.padding(14).frame(maxWidth:.infinity,alignment:.leading).background(selected ? accent.opacity(0.12) : AppTheme.surface,in:RoundedRectangle(cornerRadius:10)).overlay(RoundedRectangle(cornerRadius:10).stroke(selected ? accent : AppTheme.line)) }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : []) }
 }
 struct LessonCompleteView: View {
     let id: Int
@@ -103,6 +104,12 @@ struct LessonCompleteView: View {
                         .foregroundStyle(Color(hex: "24C83F"))
                         .frame(width: 190, height: 190)
                         .background(Color(hex: "D9F5DE"), in: Circle())
+                        .overlay {
+                            LessonConfettiView()
+                                .frame(width: 440, height: 400)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
+                        }
                         .accessibilityHidden(true)
                     Text("Lesson Complete!")
                         .font(.largeTitle.bold())
@@ -128,6 +135,92 @@ struct LessonCompleteView: View {
         .background(AppTheme.background)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+private struct LessonConfettiView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var startDate = Date()
+    @State private var isAnimating = true
+
+    private static let duration: TimeInterval = 1.8
+    private static let pieces: [ConfettiPiece] = (0..<172).map(makePiece)
+
+    nonisolated private static func makePiece(id: Int) -> ConfettiPiece {
+        let isCentral = id.isMultiple(of: 3)
+        let angleDegrees = isCentral
+            ? -105 + Double((id * 17) % 31)
+            : -165 + Double((id * 47) % 151)
+        let speed = isCentral
+            ? CGFloat(48 + (id * 13) % 42)
+            : CGFloat(125 + (id * 31) % 105)
+        return ConfettiPiece(
+            id: id,
+            angle: angleDegrees * .pi / 180,
+            speed: speed,
+            delay: Double(id % 7) * 0.014,
+            width: CGFloat(3 + id % 4),
+            height: CGFloat(6 + id % 5),
+            isRound: id.isMultiple(of: 6)
+        )
+    }
+
+    var body: some View {
+        if !reduceMotion {
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: !isAnimating)) { timeline in
+                Canvas { context, size in
+                    let elapsed = timeline.date.timeIntervalSince(startDate)
+                    for piece in Self.pieces {
+                        let time = elapsed - piece.delay
+                        guard time >= 0, time <= Self.duration else { continue }
+
+                        let origin = CGPoint(x: size.width / 2, y: size.height / 2)
+                        let horizontalTravel = cos(piece.angle) * Double(piece.speed) * time
+                        let verticalTravel = sin(piece.angle) * Double(piece.speed) * time + 105 * time * time
+                        let center = CGPoint(
+                            x: origin.x + CGFloat(horizontalTravel),
+                            y: origin.y + CGFloat(verticalTravel)
+                        )
+                        let frame = CGRect(
+                            x: center.x - piece.width / 2,
+                            y: center.y - piece.height / 2,
+                            width: piece.width,
+                            height: piece.height
+                        )
+                        let path = piece.isRound
+                            ? Path(ellipseIn: frame)
+                            : Path(roundedRect: frame, cornerRadius: 2)
+                        let opacity = max(0, 1 - time / Self.duration)
+                        context.fill(path, with: .color(piece.color.opacity(opacity * 0.62)))
+                    }
+                }
+            }
+            .task {
+                try? await Task.sleep(for: .seconds(Self.duration))
+                isAnimating = false
+            }
+        }
+    }
+}
+
+private struct ConfettiPiece: Identifiable {
+    let id: Int
+    let angle: Double
+    let speed: CGFloat
+    let delay: TimeInterval
+    let width: CGFloat
+    let height: CGFloat
+    let isRound: Bool
+
+    var color: Color {
+        switch id % 6 {
+        case 0: Color(hex: "2CC85A")
+        case 1: Color(hex: "168BF2")
+        case 2: Color(hex: "54C4E8")
+        case 3: Color(hex: "FFCC18")
+        case 4: Color(hex: "FF8A16")
+        default: Color(hex: "F52F68")
+        }
     }
 }
 
