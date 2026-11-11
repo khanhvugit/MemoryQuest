@@ -39,6 +39,10 @@ struct RootView: View {
                                 .environment(\.symbolVariants, .none)
                         }
                     }
+                    .tint(AppTheme.coral)
+                    .toolbarBackground(AppTheme.surface, for: .tabBar)
+                    .toolbarBackground(.visible, for: .tabBar)
+                    .toolbarColorScheme(app.appearance.colorScheme, for: .tabBar)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -48,7 +52,11 @@ struct RootView: View {
             .toolbarTitleDisplayMode(.inline)
         }
         .background(AppTheme.background)
-        .environment(store).environment(app).tint(AppTheme.coral).foregroundStyle(AppTheme.ink).preferredColorScheme(.light)
+        .environment(store)
+        .environment(app)
+        .tint(AppTheme.coral)
+        .foregroundStyle(AppTheme.ink)
+        .preferredColorScheme(app.appearance.colorScheme)
         .alert("Progress storage", isPresented: Binding(get: { store.storageMessage != nil }, set: { if !$0 { store.storageMessage = nil } })) { Button("Try saving again") { store.storageMessage = nil; store.save() }; Button("OK", role:.cancel) { store.storageMessage = nil } } message: { Text(store.storageMessage ?? "") }
     }
 }
@@ -65,6 +73,7 @@ struct DestinationView: View {
                 case .result(let id): ChallengeResultView(attemptID:id)
                 case .reward(let id,let isNew): BuildingRewardView(attemptID:id,isNew:isNew)
                 case .city(let preview): CityView(preview:preview)
+                case .cityAddition(let id): CityView(preview: false, newBuildingID: id)
                 case .building(let id): BuildingDetailView(id:id)
                 case .history(let id): AttemptHistoryView(challengeID:id)
                 case .settings: SettingsView()

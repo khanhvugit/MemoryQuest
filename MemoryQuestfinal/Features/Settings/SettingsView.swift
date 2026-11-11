@@ -6,8 +6,23 @@ struct SettingsView: View {
     @State private var name = ""
     @State private var confirmReset = false
     var body: some View {
+        @Bindable var app = app
         QuestPage {
             PageTitle(text:"Make it yours")
+            QuestCard {
+                Label("City atmosphere", systemImage: app.appearance.symbol)
+                    .font(.headline)
+                Picker("Appearance", selection: $app.appearance) {
+                    ForEach(AppAppearance.allCases) { appearance in
+                        Label(appearance.title, systemImage: appearance.symbol)
+                            .tag(appearance)
+                    }
+                }
+                .pickerStyle(.segmented)
+                Text("Night mode changes the entire app palette and lights the city after dark.")
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.muted)
+            }
             Text("Your name")
             AnswerField(text:$name,prompt:"Your name")
             QuestButton(title:"Save name") {

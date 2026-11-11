@@ -3,12 +3,13 @@ import SwiftUI
 struct HomeView: View {
     @Environment(ProgressStore.self) private var store
     @Environment(AppState.self) private var app
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("Morning, \(store.progress.name)")
+                    Text("\(colorScheme == .dark ? "Evening" : "Morning"), \(store.progress.name)")
                         .font(.largeTitle.bold())
                     Spacer()
                     Button { app.path.append(.settings) } label: {

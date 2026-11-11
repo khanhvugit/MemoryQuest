@@ -6,6 +6,7 @@ enum AppTheme {
     static let ink = Color("TextPrimary")
     static let muted = Color("TextSecondary")
     static let line = Color("Border")
+    static let surface = Color("CardBackground")
     static let radius: CGFloat = 12
     static let padding: CGFloat = 20
 }
@@ -24,7 +25,7 @@ struct QuestButton: View {
         Button(action: action) {
             Text(title).font(.body.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 14).padding(.horizontal, 12)
                 .foregroundStyle(secondary ? AppTheme.ink : .white)
-                .background(secondary ? Color.white : AppTheme.coral, in: RoundedRectangle(cornerRadius: 11))
+                .background(secondary ? AppTheme.surface : AppTheme.coral, in: RoundedRectangle(cornerRadius: 11))
                 .overlay(RoundedRectangle(cornerRadius: 11).stroke(secondary ? AppTheme.line : .clear))
         }.buttonStyle(.plain).disabled(disabled).opacity(disabled ? 0.45 : 1)
     }
@@ -63,7 +64,7 @@ struct AnswerField: View {
     var body: some View {
         TextField(prompt, text: $text, axis: multiline ? .vertical : .horizontal).lineLimit(multiline ? 4...8 : 1...1)
             .textInputAutocapitalization(.never).autocorrectionDisabled().padding(14)
-            .background(.white, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.line))
+            .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.line))
     }
 }
 

@@ -2,13 +2,14 @@ import SwiftUI
 
 struct CityView: View {
     let preview: Bool
+    var newBuildingID: Int? = nil
     @Environment(ProgressStore.self) private var store
     @Environment(AppState.self) private var app
     var body: some View {
         let built=preview ? Set(0..<10) : store.progress.buildings
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                CityIllustration(buildings: built) { app.path.append(.building($0)) }
+                CityIllustration(buildings: built, newBuildingID: preview ? nil : newBuildingID) { app.path.append(.building($0)) }
                 VStack(alignment: .leading, spacing: 20) {
                     ProgressView(value: Double(built.count), total: 10)
                     if preview {
@@ -107,7 +108,7 @@ struct BuildingRewardView: View {
 
                     CelebrationButton(title: isNew ? "Add to My City" : "View My City") {
                         app.navigate(.home)
-                        app.path.append(.city(false))
+                        app.path.append(isNew ? .cityAddition(c.id) : .city(false))
                     }
                 }
             }

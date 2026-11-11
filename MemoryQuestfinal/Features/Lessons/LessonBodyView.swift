@@ -23,7 +23,7 @@ struct LessonBodyBlock: View {
             if block.kind == "flow" {
                 HStack(spacing:8) {
                     ForEach(block.text.split(separator:"|"),id:\.self) { item in
-                        Text(String(item)).padding(12).background(.white,in:RoundedRectangle(cornerRadius:8)).overlay(RoundedRectangle(cornerRadius:8).stroke(AppTheme.line))
+                        Text(String(item)).padding(12).background(AppTheme.surface,in:RoundedRectangle(cornerRadius:8)).overlay(RoundedRectangle(cornerRadius:8).stroke(AppTheme.line))
                     }
                 }
             } else {
