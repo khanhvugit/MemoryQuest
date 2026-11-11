@@ -487,38 +487,38 @@ private final class CityCarView: UIView {
         let white = UIColor(white: 0.96, alpha: 1)
         return [
             CityCarView(
-                start: CityRoadLayout.point(column: 0, row: 0),
-                end: CityRoadLayout.point(column: 4, row: 0),
+                start: CityRoadLayout.point(column: -4.67, row: -1),
+                end: CityRoadLayout.point(column: 2.67, row: -1),
                 color: white,
-                duration: 12,
+                duration: 18,
                 delay: 0
             ),
             CityCarView(
-                start: CityRoadLayout.point(column: -2, row: 3),
-                end: CityRoadLayout.point(column: 2, row: 3),
+                start: CityRoadLayout.point(column: -1.67, row: 2),
+                end: CityRoadLayout.point(column: 5.67, row: 2),
                 color: white,
-                duration: 14,
+                duration: 18,
                 delay: 2
             ),
             CityCarView(
-                start: CityRoadLayout.point(column: -2, row: 2),
-                end: CityRoadLayout.point(column: 2, row: 2),
+                start: CityRoadLayout.point(column: -3.75, row: -3),
+                end: CityRoadLayout.point(column: 0.67, row: -3),
                 color: white,
-                duration: 11,
+                duration: 14,
                 delay: 4
             ),
             CityCarView(
-                start: CityRoadLayout.point(column: 3, row: -3),
-                end: CityRoadLayout.point(column: 3, row: 2),
+                start: CityRoadLayout.point(column: 3, row: -0.67),
+                end: CityRoadLayout.point(column: 3, row: 5.75),
                 color: white,
-                duration: 15,
+                duration: 17,
                 delay: 1
             ),
             CityCarView(
-                start: CityRoadLayout.point(column: 2, row: -1),
-                end: CityRoadLayout.point(column: 2, row: 2),
+                start: CityRoadLayout.point(column: -3, row: -3.75),
+                end: CityRoadLayout.point(column: -3, row: 0.67),
                 color: white,
-                duration: 13,
+                duration: 14,
                 delay: 6
             )
         ]
