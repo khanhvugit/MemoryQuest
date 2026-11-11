@@ -119,6 +119,7 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
     private let streetlampView = CityStreetlampCanvasView()
     private let carViews = CityCarView.makeCityCars()
     private let treeView = CityTreeCanvasView()
+    private let facilityViews = CityFacility.placements.map { $0.makeImageView() }
     private var previousViewport = CGSize.zero
     private let initialVerticalOffset: CGFloat
     private let newBuildingID: Int?
@@ -140,8 +141,11 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
         addSubview(canvas)
         mapImageView.frame = canvas.bounds
         canvas.addSubview(mapImageView)
-        for facility in CityFacility.placements {
-            canvas.addSubview(facility.makeImageView())
+        for plotView in plotViews {
+            canvas.addSubview(plotView.groundShadowView)
+        }
+        for facilityView in facilityViews {
+            canvas.addSubview(facilityView)
         }
         streetlampView.frame = canvas.bounds
         canvas.addSubview(streetlampView)
@@ -178,10 +182,12 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
 
     func updateAppearance(_ colorScheme: ColorScheme) {
         let isNight = colorScheme == .dark
-        canvas.backgroundColor = isNight
-            ? UIColor(white: 0.105, alpha: 1)
-            : .clear
+        mapImageView.isNight = isNight
         streetlampView.isLit = isNight
+        treeView.alpha = isNight ? 0.56 : 1
+        for facilityView in facilityViews {
+            facilityView.alpha = isNight ? 0.63 : 1
+        }
         for plotView in plotViews {
             plotView.updateAppearance(colorScheme)
         }
@@ -242,15 +248,42 @@ private struct CityFacility {
     let groundCenter: CGPoint
     let width: CGFloat
     let groundY: CGFloat
+    let baseSize: CGSize
+    let shadowHeight: CGFloat
 
     // Use a few unreserved plots and leave open space between them.
     static let placements = [
-        CityFacility(asset: "Playground", groundCenter: CityRoadLayout.plotCenter(column: -2, row: 0), width: 254, groundY: 40),
-        CityFacility(asset: "Park", groundCenter: CityRoadLayout.plotCenter(column: 0, row: -2), width: 272, groundY: 40),
+        CityFacility(
+            asset: "Playground", groundCenter: CityRoadLayout.plotCenter(column: -2, row: 0),
+            width: 254, groundY: 40, baseSize: CGSize(width: 81, height: 47), shadowHeight: 17
+        ),
+        CityFacility(
+            asset: "Park", groundCenter: CityRoadLayout.plotCenter(column: 0, row: -2),
+            width: 272, groundY: 40, baseSize: CGSize(width: 78, height: 40), shadowHeight: 15
+        ),
         // Set the fountain to the right of the grove in the same block.
-        CityFacility(asset: "Fountain", groundCenter: CityRoadLayout.plotCenter(column: -0.83, row: 0.82), width: 174, groundY: 41),
-        CityFacility(asset: "Sports Field", groundCenter: CityRoadLayout.plotCenter(column: 0.97, row: 1.97), width: 298, groundY: 30)
+        CityFacility(
+            asset: "Fountain", groundCenter: CityRoadLayout.plotCenter(column: -0.83, row: 0.82),
+            width: 174, groundY: 41, baseSize: CGSize(width: 80, height: 44), shadowHeight: 12
+        ),
+        CityFacility(
+            asset: "Sports Field", groundCenter: CityRoadLayout.plotCenter(column: 0.97, row: 1.97),
+            width: 298, groundY: 30, baseSize: CGSize(width: 80, height: 48), shadowHeight: 8
+        )
     ]
+
+    func drawShadow(in context: CGContext) {
+        let scale = width / 86
+        let footprint = CGRect(
+            x: groundCenter.x - baseSize.width * scale / 2,
+            y: groundCenter.y - baseSize.height * scale / 2,
+            width: baseSize.width * scale,
+            height: baseSize.height * scale
+        )
+        context.setFillColor(UIColor.black.withAlphaComponent(0.18).cgColor)
+        context.addPath(CitySunlight.shadow(for: footprint, height: shadowHeight * scale))
+        context.fillPath()
+    }
 
     func makeImageView() -> UIImageView {
         let view = UIImageView(image: UIImage(named: asset))
@@ -326,7 +359,8 @@ private final class CityPlotView: UIControl {
     @objc private func openPlot() { onSelect?() }
     let plot: CityPlot
     private let buildingImageView: UIImageView
-    private let groundShadowView = UIView()
+    let groundShadowView = UIView()
+    private let sunlightShadow = CAShapeLayer()
     private var hitMask: BuildingHitMask?
     private var isDarkAppearance = false
 
@@ -336,9 +370,14 @@ private final class CityPlotView: UIControl {
         isDarkAppearance = isDark
         let asset = BuildingArt.asset(for: plot.id, colorScheme: colorScheme)
         let image = UIImage(named: asset)
-        buildingImageView.image = image
+        if isDark, let image {
+            buildingImageView.image = CityNightBuilding.render(image, named: asset)
+        } else {
+            buildingImageView.image = image
+        }
         hitMask = BuildingHitMask(image: image)
         groundShadowView.layer.shadowOpacity = isDark ? 0.58 : 0.22
+        sunlightShadow.isHidden = isDark
         setNeedsDisplay()
     }
 
@@ -444,15 +483,25 @@ private final class CityPlotView: UIControl {
         accessibilityLabel = "Preview locked \(ContentRepository.challenges[plot.id].building)"
         accessibilityTraits = .button
 
-        groundShadowView.frame = bounds
+        groundShadowView.frame = plot.reservedFrame
         groundShadowView.isHidden = true
         groundShadowView.isUserInteractionEnabled = false
         groundShadowView.layer.shadowPath = footprintPath.cgPath
         groundShadowView.layer.shadowColor = UIColor.black.cgColor
         groundShadowView.layer.shadowOpacity = 0.22
-        groundShadowView.layer.shadowOffset = CGSize(width: 5, height: 6)
+        groundShadowView.layer.shadowOffset = CGSize(width: -4, height: 4)
         groundShadowView.layer.shadowRadius = 12
-        addSubview(groundShadowView)
+        sunlightShadow.frame = groundShadowView.bounds
+        let footprint = footprintPath.bounds.insetBy(dx: 14, dy: 8)
+        sunlightShadow.path = CitySunlight.shadow(for: footprint, height: plot.buildingFrame.height - footprint.height)
+        sunlightShadow.fillColor = UIColor(white: 0.12, alpha: 1).cgColor
+        sunlightShadow.opacity = 0.23
+        sunlightShadow.shadowColor = sunlightShadow.fillColor
+        sunlightShadow.shadowOpacity = 0.4
+        sunlightShadow.shadowOffset = .zero
+        sunlightShadow.shadowRadius = 4
+        sunlightShadow.shadowPath = sunlightShadow.path
+        groundShadowView.layer.addSublayer(sunlightShadow)
 
         buildingImageView.frame = plot.buildingFrame
         buildingImageView.contentMode = .scaleAspectFit
@@ -511,6 +560,96 @@ private final class CityPlotView: UIControl {
             renderingMode: .alwaysOriginal
         )
         lock?.draw(in: CGRect(x: center.x - 11, y: center.y - 14, width: 22, height: 28))
+    }
+}
+
+private enum CityNightBuilding {
+    private struct Window {
+        let x: CGFloat
+        let y: CGFloat
+        let width: CGFloat
+        let slant: CGFloat
+        let height: CGFloat
+
+        var center: CGPoint {
+            CGPoint(x: x + width / 2, y: y + (slant + height) / 2)
+        }
+
+        var outline: CGPath {
+            let path = CGMutablePath()
+            path.addLines(between: [
+                CGPoint(x: x, y: y),
+                CGPoint(x: x + width, y: y + slant),
+                CGPoint(x: x + width, y: y + slant + height),
+                CGPoint(x: x, y: y + height)
+            ])
+            path.closeSubpath()
+            return path
+        }
+    }
+
+    // Existing lit window paths in the night SVGs, in their original view-box coordinates.
+    private static let litWindows: [String: [Window]] = [
+        "building-mid-1 1": [
+            Window(x: 5.12, y: 60.79, width: 5.42, slant: 3.09, height: 8.44),
+            Window(x: 5.12, y: 118.65, width: 5.42, slant: 3.09, height: 8.44),
+            Window(x: 38.27, y: 118.05, width: 5.42, slant: 3.09, height: 8.44),
+            Window(x: 55.15, y: 108.41, width: 5.42, slant: 3.09, height: 8.44),
+            Window(x: 91.01, y: 103.96, width: 5.12, slant: -2.82, height: 8.54),
+            Window(x: 104.87, y: 75.03, width: 5.12, slant: -2.82, height: 8.54),
+            Window(x: 107.28, y: 130.48, width: 5.12, slant: -2.82, height: 8.54),
+        ],
+        "building-mid-2 1": [
+            Window(x: 15.37, y: 86.11, width: 5.42, slant: 3.09, height: 8.44),
+            Window(x: 69.31, y: 66.60, width: 5.12, slant: -2.82, height: 8.54),
+            Window(x: 56.05, y: 102.86, width: 5.12, slant: -2.81, height: 8.54),
+            Window(x: 94.62, y: 109.39, width: 5.12, slant: -2.82, height: 8.54),
+        ],
+        "shop-2 1": [
+            Window(x: 28.18, y: 76.36, width: 5.42, slant: 3.09, height: 8.44),
+            Window(x: 77.14, y: 93.28, width: 5.12, slant: -2.82, height: 8.54),
+            Window(x: 101.10, y: 107.01, width: 5.12, slant: -2.82, height: 8.54),
+        ],
+    ]
+    private static var renderedImages: [String: UIImage] = [:]
+    private static let glow = CGGradient(
+        colorsSpace: CGColorSpaceCreateDeviceRGB(),
+        colors: [
+            UIColor(red: 1, green: 0.67, blue: 0.22, alpha: 0.58).cgColor,
+            UIColor(red: 1, green: 0.48, blue: 0.16, alpha: 0.19).cgColor,
+            UIColor(red: 1, green: 0.48, blue: 0.16, alpha: 0).cgColor
+        ] as CFArray,
+        locations: [0, 0.45, 1]
+    )
+
+    static func render(_ image: UIImage, named asset: String) -> UIImage {
+        if let cached = renderedImages[asset] { return cached }
+        let bounds = CGRect(origin: .zero, size: image.size)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 2
+        let rendered = UIGraphicsImageRenderer(size: image.size, format: format).image { renderer in
+            image.draw(in: bounds)
+            let context = renderer.cgContext
+            // Dim the façade and keep the sprite's transparent silhouette.
+            context.setBlendMode(.sourceAtop)
+            context.setFillColor(UIColor(Color(hex: "101724")).withAlphaComponent(0.51).cgColor)
+            context.fill(bounds)
+
+            let windows = litWindows[asset, default: []]
+            if let glow {
+                for window in windows {
+                    context.drawRadialGradient(glow, startCenter: window.center, startRadius: 0,
+                                               endCenter: window.center, endRadius: 14, options: [])
+                }
+            }
+            context.setFillColor(UIColor(Color(hex: "FFE397")).cgColor)
+            for window in windows {
+                context.addPath(window.outline)
+                context.fillPath()
+            }
+        }
+        renderedImages[asset] = rendered
+        return rendered
     }
 }
 
@@ -656,6 +795,44 @@ enum CityRoadLayout {
     }
 }
 
+private enum CitySunlight {
+    // A 45° light from the upper right sends ground shadows down and left.
+    private static func project(_ point: CGPoint, height: CGFloat) -> CGPoint {
+        let distance = height * 0.34
+        return CGPoint(x: point.x - distance, y: point.y + distance)
+    }
+
+    static func shadow(for footprint: CGRect, height: CGFloat) -> CGPath {
+        let top = CGPoint(x: footprint.midX, y: footprint.minY)
+        let left = CGPoint(x: footprint.minX, y: footprint.midY)
+        let bottom = CGPoint(x: footprint.midX, y: footprint.maxY)
+        let right = CGPoint(x: footprint.maxX, y: footprint.midY)
+
+        let shadow = CGMutablePath()
+        shadow.addLines(between: [
+            top, left, project(left, height: height), project(bottom, height: height),
+            project(right, height: height), right
+        ])
+        shadow.closeSubpath()
+        return shadow
+    }
+
+    static func drawUprightShadow(from foot: CGPoint, height: CGFloat, stemWidth: CGFloat,
+                                  tipWidth: CGFloat, in context: CGContext) {
+        let tip = project(foot, height: height)
+        let color = UIColor.black.withAlphaComponent(0.18).cgColor
+        context.setStrokeColor(color)
+        context.setLineWidth(stemWidth)
+        context.setLineCap(.round)
+        context.move(to: foot)
+        context.addLine(to: tip)
+        context.strokePath()
+        context.setFillColor(color)
+        context.fillEllipse(in: CGRect(x: tip.x - tipWidth / 2, y: tip.y - tipWidth / 3,
+                                       width: tipWidth, height: tipWidth * 2 / 3))
+    }
+}
+
 final class CityRoadCanvasView: UIView {
     private let horizontal = UIImage(named: "road-horizontal")
     private let vertical = UIImage(named: "road-vertical")
@@ -664,6 +841,12 @@ final class CityRoadCanvasView: UIView {
     private let missingSoutheast = UIImage(named: "road-t junction-2")
     private let missingNortheast = UIImage(named: "road-t junction-3")
     private let missingSouthwest = UIImage(named: "road-t junction-4")
+
+    var isNight = false {
+        didSet {
+            if oldValue != isNight { setNeedsDisplay() }
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -696,6 +879,13 @@ final class CityRoadCanvasView: UIView {
             x: bounds.width / CityRoadLayout.canvasSize.width,
             y: bounds.height / CityRoadLayout.canvasSize.height
         )
+        let groundFrame = CGRect(origin: .zero, size: CityRoadLayout.canvasSize)
+        let groundColor = UIColor(Color(hex: isNight ? "171A20" : "F8F4EE"))
+        context.setFillColor(groundColor.cgColor)
+        context.fill(groundFrame)
+
+        context.saveGState()
+        if isNight { context.setAlpha(0.24) }
         for column in -7...7 {
             for row in -7...7 {
                 let center = CityRoadLayout.point(column: CGFloat(column), row: CGFloat(row))
@@ -727,6 +917,14 @@ final class CityRoadCanvasView: UIView {
         }
 
         context.restoreGState()
+        if !isNight {
+            for facility in CityFacility.placements {
+                facility.drawShadow(in: context)
+            }
+            CityStreetlampCanvasView.drawShadows(in: context)
+            CityTreeCanvasView.drawShadows(in: context)
+        }
+        context.restoreGState()
     }
 }
 
@@ -741,12 +939,22 @@ private final class CityStreetlampCanvasView: UIView {
         locations: [0, 1]
     )
     // Mid-block curb positions on road segments that are present in the layout.
-    private let curbs: [(column: CGFloat, row: CGFloat)] = [
+    private static let curbs: [(column: CGFloat, row: CGFloat)] = [
         (-2.5, -2.9), (-1.9, -1.5), (-1.5, -0.1), (-0.1, -2.5),
         (-0.5, -0.9), (0.9, -1.5), (0.5, -0.1), (1.5, 0.1),
         (-1.5, 1.9), (-0.5, 1.1), (0.1, 2.5), (1.5, 2.1),
         (2.9, 0.5), (2.5, 2.1), (3.5, 1.9), (3.1, 4.5)
     ]
+
+    private static let scale: CGFloat = 1.8
+
+    static func drawShadows(in context: CGContext) {
+        for curb in curbs {
+            let foot = CityRoadLayout.point(column: curb.column, row: curb.row)
+            CitySunlight.drawUprightShadow(from: foot, height: 30 * scale, stemWidth: 2 * scale,
+                                          tipWidth: 7 * scale, in: context)
+        }
+    }
 
     var isLit = false {
         didSet {
@@ -765,8 +973,8 @@ private final class CityStreetlampCanvasView: UIView {
 
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
-        let scale: CGFloat = 1.8
-        for curb in curbs {
+        let scale = Self.scale
+        for curb in Self.curbs {
             let foot = CityRoadLayout.point(column: curb.column, row: curb.row)
             let frame = CGRect(x: foot.x - 10 * scale, y: foot.y - 36 * scale,
                                width: 24 * scale, height: 40 * scale)
@@ -783,6 +991,44 @@ private final class CityStreetlampCanvasView: UIView {
 /// Tree clusters render above traffic, so cars pass behind roadside foliage.
 private final class CityTreeCanvasView: UIView {
     private let tree = UIImage(named: "tree")
+    private static let frames: [CGRect] = {
+        // Fixed, asymmetric placements stay stable during redraws and zooming.
+        let groves: [(column: CGFloat, row: CGFloat, width: CGFloat)] = [
+            (-2.12, -0.91, 108), (-0.86, -2.08, 132),
+            (1.12, -0.88, 102), (-1.15, 1.08, 125),
+            (2.08, 0.16, 138), (0.12, 2.28, 94),
+            (-2.06, 1.13, 112), (1.16, -2.11, 92),
+            (2.13, 2.06, 122), (3.04, 0.85, 98),
+            (-3.12, -1.88, 134), (-1.87, -3.14, 100),
+            (3.16, 3.03, 110), (1.9, 4.12, 130)
+        ]
+        return groves.sorted(by: { $0.column + $0.row < $1.column + $1.row }).flatMap { grove in
+            let center = CityRoadLayout.plotCenter(column: grove.column, row: grove.row)
+            let trunks: [(x: CGFloat, y: CGFloat, width: CGFloat)] = [
+                (0.03, -0.20, 0.53),
+                (0.27, 0.02, 0.36),
+                (-0.24, 0.14, 0.44)
+            ]
+            return trunks.map { trunk in
+                let scale = grove.width * trunk.width / 26
+                return CGRect(
+                    x: center.x + grove.width * trunk.x - 14.5 * scale,
+                    y: center.y + grove.width * trunk.y - 32 * scale,
+                    width: 26 * scale,
+                    height: 33 * scale
+                )
+            }
+        }
+    }()
+
+    static func drawShadows(in context: CGContext) {
+        for frame in frames {
+            let scale = frame.width / 26
+            let foot = CGPoint(x: frame.minX + 14.5 * scale, y: frame.minY + 32 * scale)
+            CitySunlight.drawUprightShadow(from: foot, height: 27 * scale, stemWidth: 2.5 * scale,
+                                          tipWidth: 16 * scale, in: context)
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -801,33 +1047,8 @@ private final class CityTreeCanvasView: UIView {
             y: bounds.height / CityRoadLayout.canvasSize.height
         )
 
-        // Fixed, asymmetric placements stay stable during redraws and zooming.
-        let groves: [(column: CGFloat, row: CGFloat, width: CGFloat)] = [
-            (-2.12, -0.91, 108), (-0.86, -2.08, 132),
-            (1.12, -0.88, 102), (-1.15, 1.08, 125),
-            (2.08, 0.16, 138), (0.12, 2.28, 94),
-            (-2.06, 1.13, 112), (1.16, -2.11, 92),
-            (2.13, 2.06, 122), (3.04, 0.85, 98),
-            (-3.12, -1.88, 134), (-1.87, -3.14, 100),
-            (3.16, 3.03, 110), (1.9, 4.12, 130)
-        ]
-        for grove in groves.sorted(by: { $0.column + $0.row < $1.column + $1.row }) {
-            let center = CityRoadLayout.plotCenter(column: grove.column, row: grove.row)
-            let trunks: [(x: CGFloat, y: CGFloat, width: CGFloat)] = [
-                (0.03, -0.20, 0.53),
-                (0.27, 0.02, 0.36),
-                (-0.24, 0.14, 0.44)
-            ]
-            for trunk in trunks {
-                let scale = grove.width * trunk.width / 26
-                let frame = CGRect(
-                    x: center.x + grove.width * trunk.x - 14.5 * scale,
-                    y: center.y + grove.width * trunk.y - 32 * scale,
-                    width: 26 * scale,
-                    height: 33 * scale
-                )
-                tree?.draw(in: frame)
-            }
+        for frame in Self.frames {
+            tree?.draw(in: frame)
         }
         context.restoreGState()
     }
