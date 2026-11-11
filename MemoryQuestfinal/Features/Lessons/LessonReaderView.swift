@@ -90,7 +90,7 @@ struct ChoiceButton: View {
     let selected: Bool
     var accent: Color = AppTheme.coral
     let action: () -> Void
-    var body: some View { Button(action:action) { HStack { Text(title).multilineTextAlignment(.leading); Spacer(); if selected { Image(systemName:"checkmark.circle.fill").foregroundStyle(accent) } }.padding(14).frame(maxWidth:.infinity,alignment:.leading).background(selected ? accent.opacity(0.12) : AppTheme.surface,in:RoundedRectangle(cornerRadius:10)).overlay(RoundedRectangle(cornerRadius:10).stroke(selected ? accent : AppTheme.line)) }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : []) }
+    var body: some View { Button(action:action) { HStack { Text(title).multilineTextAlignment(.leading); Spacer() }.padding(14).frame(maxWidth:.infinity,alignment:.leading).background(selected ? accent.opacity(0.12) : AppTheme.surface,in:RoundedRectangle(cornerRadius:10)).overlay(RoundedRectangle(cornerRadius:10).stroke(selected ? accent : AppTheme.line)) }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : []) }
 }
 struct LessonCompleteView: View {
     let id: Int
@@ -245,3 +245,4 @@ private struct ConfettiPiece: Identifiable {
     PreviewScreen() { LessonCompleteView(id: 0) }
 }
 #endif
+

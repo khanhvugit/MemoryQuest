@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(ProgressStore.self) private var store
@@ -38,11 +39,47 @@ struct SettingsView: View {
                 Text("Start fresh").font(.headline)
                 QuestButton(title:"Reset Progress",secondary:true) { confirmReset=true }
             }
-        }.navigationTitle("Settings").onAppear { name=store.progress.name }
-            .confirmationDialog("Start a fresh city?",isPresented:$confirmReset,titleVisibility:.visible) {
-                Button("Reset Progress",role:.destructive) { store.reset(); app.navigate(.home) }
-                Button("Keep my progress",role:.cancel) { }
-            } message: { Text("Your lesson progress, challenge results, reviews, and buildings will be cleared from this device.") }
+        }
+        .background {
+            ResetProgressAlert(isPresented: $confirmReset) {
+                store.reset()
+                app.navigate(.home)
+            }
+        }
+        .navigationTitle("Settings")
+        .onAppear { name = store.progress.name }
+    }
+}
+
+private struct ResetProgressAlert: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+    let reset: () -> Void
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        UIViewController()
+    }
+
+    func updateUIViewController(_ controller: UIViewController, context: Context) {
+        guard isPresented, controller.viewIfLoaded?.window != nil,
+              controller.presentedViewController == nil else { return }
+
+        let alert = UIAlertController(
+            title: String(localized: "Start a fresh city?"),
+            message: String(localized: "Your lesson progress, challenge results, reviews, and buildings will be cleared from this device."),
+            preferredStyle: .alert
+        )
+        // The dark system appearance keeps the white cancel action legible in either app theme.
+        alert.overrideUserInterfaceStyle = .dark
+        alert.traitOverrides.accessibilityContrast = .high
+        alert.view.tintColor = .white
+        alert.addAction(UIAlertAction(title: String(localized: "Keep my progress"), style: .cancel) { _ in
+            isPresented = false
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "Reset Progress"), style: .destructive) { _ in
+            isPresented = false
+            reset()
+        })
+        controller.present(alert, animated: true)
     }
 }
 

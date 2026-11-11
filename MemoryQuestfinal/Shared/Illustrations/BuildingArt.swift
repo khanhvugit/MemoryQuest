@@ -50,23 +50,22 @@ struct CityIllustration: View {
     var select: (Int) -> Void = { _ in }
     @Environment(\.colorScheme) private var colorScheme
 
-    private var unlockedPlotIDs: Set<String> { Set(buildings.map { String($0) }) }
-
     var body: some View {
         ZStack {
-            BoundedMapScrollView(unlockedPlotIDs: unlockedPlotIDs, initialVerticalOffset: initialVerticalOffset, newBuildingID: newBuildingID, select: select)
-                .accessibilityLabel("City map")
-                .accessibilityHint("Drag to explore. Pinch to zoom in or out.")
+            BoundedMapScrollView(
+                unlockedPlotIDs: buildings,
+                initialVerticalOffset: initialVerticalOffset,
+                newBuildingID: newBuildingID,
+                select: select
+            )
+            .accessibilityLabel("City map")
+            .accessibilityHint("Drag to explore. Pinch to zoom in or out.")
             CityNightOverlay()
                 .opacity(colorScheme == .dark ? 1 : 0)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .background(
-            colorScheme == .dark
-                ? .black
-                : AppTheme.background
-        )
+        .background(AppTheme.background)
         .aspectRatio(aspectRatio, contentMode: .fit)
         .clipped()
         // Keep the feathered edges fixed to the viewport as the map moves.
@@ -99,7 +98,7 @@ private struct CityNightOverlay: View {
 // UIKit owns both gestures so dragging and pinching share one coordinate space.
 private struct BoundedMapScrollView: UIViewRepresentable {
     @Environment(\.colorScheme) private var colorScheme
-    let unlockedPlotIDs: Set<String>
+    let unlockedPlotIDs: Set<Int>
     var initialVerticalOffset: CGFloat = 0
     var newBuildingID: Int? = nil
     let select: (Int) -> Void
@@ -110,15 +109,16 @@ private struct BoundedMapScrollView: UIViewRepresentable {
 
     func updateUIView(_ scrollView: MapScrollView, context: Context) {
         scrollView.updatePlots(unlockedIDs: unlockedPlotIDs, select: select)
-        scrollView.updateBuildingAppearance(isDark: colorScheme == .dark)
+        scrollView.updateAppearance(colorScheme)
     }
 }
 
 private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
     private let canvas = UIView(frame: CGRect(origin: .zero, size: CityRoadLayout.canvasSize))
     private let mapImageView = CityRoadCanvasView()
+    private let streetlampView = CityStreetlampCanvasView()
     private let carViews = CityCarView.makeCityCars()
-    private let forestImageView = CityForestCanvasView()
+    private let treeView = CityTreeCanvasView()
     private var previousViewport = CGSize.zero
     private let initialVerticalOffset: CGFloat
     private let newBuildingID: Int?
@@ -140,14 +140,19 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
         addSubview(canvas)
         mapImageView.frame = canvas.bounds
         canvas.addSubview(mapImageView)
+        for facility in CityFacility.placements {
+            canvas.addSubview(facility.makeImageView())
+        }
+        streetlampView.frame = canvas.bounds
+        canvas.addSubview(streetlampView)
         for carView in carViews {
             canvas.addSubview(carView)
         }
-        forestImageView.frame = canvas.bounds
-        canvas.addSubview(forestImageView)
+        treeView.frame = canvas.bounds
+        canvas.addSubview(treeView)
         for plotView in plotViews {
             canvas.addSubview(plotView)
-            if plotView.plot.id == newBuildingID.map(String.init) {
+            if plotView.plot.id == newBuildingID {
                 plotView.prepareConstruction()
             }
         }
@@ -163,16 +168,22 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
 
     required init?(coder: NSCoder) { nil }
 
-    func updatePlots(unlockedIDs: Set<String>, select: @escaping (Int) -> Void) {
+    func updatePlots(unlockedIDs: Set<Int>, select: @escaping (Int) -> Void) {
         for plotView in plotViews {
             plotView.isUnlocked = unlockedIDs.contains(plotView.plot.id)
-            plotView.onSelect = { if let id = Int(plotView.plot.id) { select(id) } }
+            let id = plotView.plot.id
+            plotView.onSelect = { select(id) }
         }
     }
 
-    func updateBuildingAppearance(isDark: Bool) {
+    func updateAppearance(_ colorScheme: ColorScheme) {
+        let isNight = colorScheme == .dark
+        canvas.backgroundColor = isNight
+            ? UIColor(white: 0.105, alpha: 1)
+            : .clear
+        streetlampView.isLit = isNight
         for plotView in plotViews {
-            plotView.updateAppearance(isDark: isDark)
+            plotView.updateAppearance(colorScheme)
         }
     }
 
@@ -197,7 +208,7 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
         maximumZoomScale = minimumZoomScale * 4
         setZoomScale(min(maximumZoomScale, minimumZoomScale * (firstLayout ? 1.5 : relativeZoom)), animated: false)
         // Shift the initial framing without leaving an empty strip above the map.
-        let newPlot = plotViews.first { $0.plot.id == newBuildingID.map(String.init) }
+        let newPlot = plotViews.first { $0.plot.id == newBuildingID }
         let initialCenter = newPlot.map { CGPoint(x: $0.frame.midX, y: $0.frame.midY) }
             ?? CGPoint(x: canvas.bounds.midX, y: canvas.bounds.midY - initialVerticalOffset / zoomScale)
         let target = firstLayout ? initialCenter : center
@@ -226,10 +237,41 @@ private final class MapScrollView: UIScrollView, UIScrollViewDelegate {
     }
 }
 
+private struct CityFacility {
+    let asset: String
+    let groundCenter: CGPoint
+    let width: CGFloat
+    let groundY: CGFloat
+
+    // Use a few unreserved plots and leave open space between them.
+    static let placements = [
+        CityFacility(asset: "Playground", groundCenter: CityRoadLayout.plotCenter(column: -2, row: 0), width: 254, groundY: 40),
+        CityFacility(asset: "Park", groundCenter: CityRoadLayout.plotCenter(column: 0, row: -2), width: 272, groundY: 40),
+        // Set the fountain to the right of the grove in the same block.
+        CityFacility(asset: "Fountain", groundCenter: CityRoadLayout.plotCenter(column: -0.83, row: 0.82), width: 174, groundY: 41),
+        CityFacility(asset: "Sports Field", groundCenter: CityRoadLayout.plotCenter(column: 0.97, row: 1.97), width: 298, groundY: 30)
+    ]
+
+    func makeImageView() -> UIImageView {
+        let view = UIImageView(image: UIImage(named: asset))
+        // The SVGs share an 86 × 68 view box with different ground centers.
+        let scale = width / 86
+        view.frame = CGRect(
+            x: groundCenter.x - width / 2,
+            y: groundCenter.y - groundY * scale,
+            width: width,
+            height: 68 * scale
+        )
+        view.contentMode = .scaleAspectFit
+        view.isUserInteractionEnabled = false
+        view.accessibilityElementsHidden = true
+        return view
+    }
+}
+
 // Coordinates use the map's original 1600 × 1920 canvas, independent of screen size.
 private struct CityPlot: Identifiable {
-    let id: String
-    let asset: String
+    let id: Int
     let assetSize: CGSize
     let groundCenter: CGPoint
 
@@ -260,16 +302,16 @@ private struct CityPlot: Identifiable {
 
     // Stable IDs are the integration point for future saved unlock progress.
     static let reserved: [CityPlot] = [
-        CityPlot(id: "6", asset: "house small-2", assetSize: CGSize(width: 105, height: 107), groundCenter: CityRoadLayout.plotCenter(column: -1, row: 0)),
-        CityPlot(id: "0", asset: "building-mid-1", assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: 0, row: 0)),
-        CityPlot(id: "2", asset: "building-mid-2", assetSize: CGSize(width: 119, height: 164), groundCenter: CityRoadLayout.plotCenter(column: 0, row: -1)),
-        CityPlot(id: "1", asset: "shop-2", assetSize: CGSize(width: 144, height: 145), groundCenter: CityRoadLayout.plotCenter(column: 0, row: 1)),
-        CityPlot(id: "3", asset: "buiding-tall-2", assetSize: CGSize(width: 135, height: 300), groundCenter: CityRoadLayout.plotCenter(column: 1, row: 0)),
-        CityPlot(id: "7", asset: "building-tall-1", assetSize: CGSize(width: 131, height: 298), groundCenter: CityRoadLayout.plotCenter(column: 1, row: 1)),
-        CityPlot(id: "4", asset: "building-mid-1", assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: -1, row: -1)),
-        CityPlot(id: "5", asset: "shop-2", assetSize: CGSize(width: 144, height: 145), groundCenter: CityRoadLayout.plotCenter(column: -1, row: 2)),
-        CityPlot(id: "8", asset: "building-mid-1", assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: 2, row: -1)),
-        CityPlot(id: "9", asset: "building-mid-2", assetSize: CGSize(width: 119, height: 164), groundCenter: CityRoadLayout.plotCenter(column: 2, row: 1))
+        CityPlot(id: 6, assetSize: CGSize(width: 105, height: 107), groundCenter: CityRoadLayout.plotCenter(column: -1, row: 0)),
+        CityPlot(id: 0, assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: 0, row: 0)),
+        CityPlot(id: 2, assetSize: CGSize(width: 119, height: 164), groundCenter: CityRoadLayout.plotCenter(column: 0, row: -1)),
+        CityPlot(id: 1, assetSize: CGSize(width: 144, height: 145), groundCenter: CityRoadLayout.plotCenter(column: 0, row: 1)),
+        CityPlot(id: 3, assetSize: CGSize(width: 135, height: 300), groundCenter: CityRoadLayout.plotCenter(column: 1, row: 0)),
+        CityPlot(id: 7, assetSize: CGSize(width: 131, height: 298), groundCenter: CityRoadLayout.plotCenter(column: 1, row: 1)),
+        CityPlot(id: 4, assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: -1, row: -1)),
+        CityPlot(id: 5, assetSize: CGSize(width: 144, height: 145), groundCenter: CityRoadLayout.plotCenter(column: -1, row: 2)),
+        CityPlot(id: 8, assetSize: CGSize(width: 135, height: 174), groundCenter: CityRoadLayout.plotCenter(column: 2, row: -1)),
+        CityPlot(id: 9, assetSize: CGSize(width: 119, height: 164), groundCenter: CityRoadLayout.plotCenter(column: 2, row: 1))
     ]
 }
 
@@ -284,13 +326,19 @@ private final class CityPlotView: UIControl {
     @objc private func openPlot() { onSelect?() }
     let plot: CityPlot
     private let buildingImageView: UIImageView
+    private let groundShadowView = UIView()
+    private var hitMask: BuildingHitMask?
     private var isDarkAppearance = false
 
-    func updateAppearance(isDark: Bool) {
+    func updateAppearance(_ colorScheme: ColorScheme) {
+        let isDark = colorScheme == .dark
         guard isDarkAppearance != isDark else { return }
         isDarkAppearance = isDark
-        let asset = isDark ? BuildingArt.darkAssets[plot.asset, default: plot.asset] : plot.asset
-        buildingImageView.image = UIImage(named: asset)
+        let asset = BuildingArt.asset(for: plot.id, colorScheme: colorScheme)
+        let image = UIImage(named: asset)
+        buildingImageView.image = image
+        hitMask = BuildingHitMask(image: image)
+        groundShadowView.layer.shadowOpacity = isDark ? 0.58 : 0.22
         setNeedsDisplay()
     }
 
@@ -303,6 +351,7 @@ private final class CityPlotView: UIControl {
     func prepareConstruction() {
         constructionPending = true
         buildingImageView.alpha = 0
+        groundShadowView.alpha = 0
         isUserInteractionEnabled = false
         constructionTrack.backgroundColor = .systemGray4
         constructionTrack.layer.cornerRadius = 7
@@ -328,6 +377,7 @@ private final class CityPlotView: UIControl {
                 constructionTask = nil
                 constructionFill.layer.removeAllAnimations()
                 buildingImageView.layer.removeAllAnimations()
+                groundShadowView.layer.removeAllAnimations()
                 finishConstruction(animated: false)
             }
             return
@@ -365,31 +415,45 @@ private final class CityPlotView: UIControl {
             options: [.curveEaseInOut, .allowUserInteraction]
         ) {
             self.buildingImageView.alpha = 1
+            self.groundShadowView.alpha = 1
         }
     }
     var isUnlocked = false {
         didSet {
             guard oldValue != isUnlocked else { return }
             buildingImageView.isHidden = !isUnlocked
+            groundShadowView.isHidden = !isUnlocked
             accessibilityLabel = isUnlocked
-                ? "Open \(ContentRepository.challenges[Int(plot.id) ?? 0].building)"
-                : "Preview locked \(ContentRepository.challenges[Int(plot.id) ?? 0].building)"
+                ? "Open \(ContentRepository.challenges[plot.id].building)"
+                : "Preview locked \(ContentRepository.challenges[plot.id].building)"
             setNeedsDisplay()
         }
     }
 
     init(plot: CityPlot) {
         self.plot = plot
-        buildingImageView = UIImageView(image: UIImage(named: plot.asset))
+        let image = UIImage(named: BuildingArt.asset(for: plot.id, colorScheme: .light))
+        buildingImageView = UIImageView(image: image)
+        hitMask = BuildingHitMask(image: image)
         super.init(frame: plot.reservedFrame)
         backgroundColor = .clear
         isOpaque = false
         isUserInteractionEnabled = true
         addTarget(self, action: #selector(openPlot), for: .touchUpInside)
         isAccessibilityElement = true
-        accessibilityLabel = String(localized: "Locked plot")
+        accessibilityLabel = "Preview locked \(ContentRepository.challenges[plot.id].building)"
         accessibilityTraits = .button
-        accessibilityLabel = ContentRepository.challenges[Int(plot.id) ?? 0].building
+
+        groundShadowView.frame = bounds
+        groundShadowView.isHidden = true
+        groundShadowView.isUserInteractionEnabled = false
+        groundShadowView.layer.shadowPath = footprintPath.cgPath
+        groundShadowView.layer.shadowColor = UIColor.black.cgColor
+        groundShadowView.layer.shadowOpacity = 0.22
+        groundShadowView.layer.shadowOffset = CGSize(width: 5, height: 6)
+        groundShadowView.layer.shadowRadius = 12
+        addSubview(groundShadowView)
+
         buildingImageView.frame = plot.buildingFrame
         buildingImageView.contentMode = .scaleAspectFit
         buildingImageView.isHidden = true
@@ -400,8 +464,7 @@ private final class CityPlotView: UIControl {
         return nil
     }
 
-    override func draw(_ rect: CGRect) {
-        guard !isUnlocked else { return }
+    private lazy var footprintPath: UIBezierPath = {
         let footprint = plot.footprintSize
         let center = CGPoint(
             x: bounds.midX,
@@ -413,19 +476,74 @@ private final class CityPlotView: UIControl {
         path.addLine(to: CGPoint(x: center.x, y: center.y + footprint.height / 2))
         path.addLine(to: CGPoint(x: center.x - footprint.width / 2, y: center.y))
         path.close()
+        return path
+    }()
+
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        guard isUnlocked else { return footprintPath.contains(point) }
+        guard let image = buildingImageView.image else { return false }
+        let frame = buildingImageView.frame
+        let scale = min(frame.width / image.size.width, frame.height / image.size.height)
+        let width = image.size.width * scale
+        let height = image.size.height * scale
+        let imageRect = CGRect(x: frame.midX - width / 2, y: frame.midY - height / 2, width: width, height: height)
+        guard imageRect.contains(point) else { return false }
+        // Transparent parts of foreground buildings let taps reach the artwork behind them.
+        return hitMask?.contains(
+            x: (point.x - imageRect.minX) / width,
+            y: (point.y - imageRect.minY) / height
+        ) ?? true
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard !isUnlocked else { return }
         let lockedColor = isDarkAppearance
             ? UIColor.white.withAlphaComponent(0.82)
             : UIColor.darkGray.withAlphaComponent(0.65)
         lockedColor.setStroke()
-        path.lineWidth = 2.5
-        path.setLineDash([8, 6], count: 2, phase: 0)
-        path.stroke()
+        footprintPath.lineWidth = 2.5
+        footprintPath.setLineDash([8, 6], count: 2, phase: 0)
+        footprintPath.stroke()
 
+        let center = CGPoint(x: bounds.midX, y: plot.groundCenter.y - plot.reservedFrame.minY)
         let lock = UIImage(systemName: "lock.fill")?.withTintColor(
             lockedColor,
             renderingMode: .alwaysOriginal
         )
         lock?.draw(in: CGRect(x: center.x - 11, y: center.y - 14, width: 22, height: 28))
+    }
+}
+
+private struct BuildingHitMask {
+    private let width: Int
+    private let height: Int
+    private let alpha: [UInt8]
+
+    init?(image: UIImage?) {
+        guard let image, let source = image.cgImage else { return nil }
+        let width = Int(image.size.width.rounded(.up))
+        let height = Int(image.size.height.rounded(.up))
+        guard width > 0, height > 0 else { return nil }
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drewImage = pixels.withUnsafeMutableBytes { buffer in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height,
+                                          bitsPerComponent: 8, bytesPerRow: width * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                                            | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+            context.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drewImage else { return nil }
+        self.width = width
+        self.height = height
+        alpha = stride(from: 3, to: pixels.count, by: 4).map { pixels[$0] }
+    }
+
+    func contains(x: CGFloat, y: CGFloat) -> Bool {
+        let column = min(Int(x * CGFloat(width)), width - 1)
+        let row = min(Int(y * CGFloat(height)), height - 1)
+        return alpha[row * width + column] > 32
     }
 }
 
@@ -612,9 +730,59 @@ final class CityRoadCanvasView: UIView {
     }
 }
 
-/// Forests render above traffic, hiding cars whenever a road passes behind a grove.
-private final class CityForestCanvasView: UIView {
-    private let forest = UIImage(named: "forest")
+private final class CityStreetlampCanvasView: UIView {
+    private let lamp = UIImage(named: "Streetlamp")
+    private let glow = CGGradient(
+        colorsSpace: CGColorSpaceCreateDeviceRGB(),
+        colors: [
+            UIColor(red: 1, green: 0.89, blue: 0.55, alpha: 0.88).cgColor,
+            UIColor(red: 1, green: 0.67, blue: 0.24, alpha: 0).cgColor
+        ] as CFArray,
+        locations: [0, 1]
+    )
+    // Mid-block curb positions on road segments that are present in the layout.
+    private let curbs: [(column: CGFloat, row: CGFloat)] = [
+        (-2.5, -2.9), (-1.9, -1.5), (-1.5, -0.1), (-0.1, -2.5),
+        (-0.5, -0.9), (0.9, -1.5), (0.5, -0.1), (1.5, 0.1),
+        (-1.5, 1.9), (-0.5, 1.1), (0.1, 2.5), (1.5, 2.1),
+        (2.9, 0.5), (2.5, 2.1), (3.5, 1.9), (3.1, 4.5)
+    ]
+
+    var isLit = false {
+        didSet {
+            if oldValue != isLit { setNeedsDisplay() }
+        }
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isOpaque = false
+        isUserInteractionEnabled = false
+        accessibilityElementsHidden = true
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        let scale: CGFloat = 1.8
+        for curb in curbs {
+            let foot = CityRoadLayout.point(column: curb.column, row: curb.row)
+            let frame = CGRect(x: foot.x - 10 * scale, y: foot.y - 36 * scale,
+                               width: 24 * scale, height: 40 * scale)
+            lamp?.draw(in: frame)
+            if isLit, let glow {
+                let bulb = CGPoint(x: frame.minX + 18 * scale, y: frame.minY + 12 * scale)
+                context.drawRadialGradient(glow, startCenter: bulb, startRadius: 2 * scale,
+                                           endCenter: bulb, endRadius: 19 * scale, options: [.drawsBeforeStartLocation])
+            }
+        }
+    }
+}
+
+/// Tree clusters render above traffic, so cars pass behind roadside foliage.
+private final class CityTreeCanvasView: UIView {
+    private let tree = UIImage(named: "tree")
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -645,14 +813,21 @@ private final class CityForestCanvasView: UIView {
         ]
         for grove in groves.sorted(by: { $0.column + $0.row < $1.column + $1.row }) {
             let center = CityRoadLayout.plotCenter(column: grove.column, row: grove.row)
-            let height = grove.width * 148 / 112
-            let groveFrame = CGRect(
-                x: center.x - grove.width / 2,
-                y: center.y - height + grove.width / 4,
-                width: grove.width,
-                height: height
-            )
-            forest?.draw(in: groveFrame)
+            let trunks: [(x: CGFloat, y: CGFloat, width: CGFloat)] = [
+                (0.03, -0.20, 0.53),
+                (0.27, 0.02, 0.36),
+                (-0.24, 0.14, 0.44)
+            ]
+            for trunk in trunks {
+                let scale = grove.width * trunk.width / 26
+                let frame = CGRect(
+                    x: center.x + grove.width * trunk.x - 14.5 * scale,
+                    y: center.y + grove.width * trunk.y - 32 * scale,
+                    width: 26 * scale,
+                    height: 33 * scale
+                )
+                tree?.draw(in: frame)
+            }
         }
         context.restoreGState()
     }
@@ -669,6 +844,6 @@ private final class CityForestCanvasView: UIView {
 }
 
 #Preview("BoundedMapScrollView") {
-    PreviewScreen() { BoundedMapScrollView(unlockedPlotIDs: ["0", "1"], select: { _ in }) }
+    PreviewScreen() { BoundedMapScrollView(unlockedPlotIDs: [0, 1], select: { _ in }) }
 }
 #endif

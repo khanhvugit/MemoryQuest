@@ -9,7 +9,12 @@ struct CityView: View {
         let built=preview ? Set(0..<10) : store.progress.buildings
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                CityIllustration(buildings: built, newBuildingID: preview ? nil : newBuildingID) { app.path.append(.building($0)) }
+                CityIllustration(
+                    buildings: built,
+                    newBuildingID: preview ? nil : newBuildingID
+                ) {
+                    app.path.append(.building($0))
+                }
                 VStack(alignment: .leading, spacing: 20) {
                     ProgressView(value: Double(built.count), total: 10)
                     if preview {

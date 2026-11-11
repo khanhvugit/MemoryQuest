@@ -34,7 +34,7 @@ struct HomeView: View {
                     app.path.append(.city(false))
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, -12)
+                .padding(.top, 8)
 
                 HomeSuggestions()
                     .padding(.horizontal, 22)
@@ -77,6 +77,7 @@ private struct HomeCityProgress: View {
                     .accessibilityValue("\(completedCount) of \(total)")
                     .padding(.vertical, 4)
             }
+            .contentShape(RoundedRectangle(cornerRadius: AppTheme.radius))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("My City, \(percentage) percent complete")
