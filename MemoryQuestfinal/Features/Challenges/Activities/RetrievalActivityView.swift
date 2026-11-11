@@ -16,7 +16,7 @@ struct RetrievalActivityView: View {
                 }
             } else if model.id == 5 {
                 PageTitle(text:"Retrieve the concept")
-                QuestCard { Text("Which concept matches this analogy?").font(.caption); Text(model.content.links[model.index].cue).font(.title3) }
+                QuestCard { Text("Which concept matches this analogy?").font(.caption); Text(model.links[model.index].cue).font(.title3) }
             } else {
                 let item=model.deck[model.index]
                 if [6,7].contains(model.id) {

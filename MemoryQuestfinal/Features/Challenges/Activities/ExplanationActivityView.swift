@@ -5,7 +5,7 @@ struct ExplanationActivityView: View {
     var body: some View {
         VStack(alignment:.leading,spacing:18) {
             Image(systemName:"desktopcomputer").font(.system(size:44)).foregroundStyle(Color(hex:"ae7b16"))
-            PageTitle(text:model.content.robots[model.index].q)
+            PageTitle(text:model.robots[model.index].q)
             Text("Explain from memory. The robot checks for predefined key ideas.").font(.subheadline).foregroundStyle(AppTheme.muted)
             Text("Your explanation")
             AnswerField(text:$model.answer,prompt:"Use your own words…",multiline:true).disabled(model.feedback != nil)
@@ -17,7 +17,7 @@ struct ExplanationActivityView: View {
 struct DetectiveActivityView: View {
     @Bindable var model: ChallengeSessionViewModel
     var body: some View {
-        let question=model.content.detectives[model.index]
+        let question=model.detectives[model.index]
         VStack(alignment:.leading,spacing:18) {
             PageTitle(text:"Follow the evidence")
             Text(question.q).font(.title3)
