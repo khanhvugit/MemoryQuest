@@ -17,6 +17,7 @@ struct ChallengeAttempt: Codable, Identifiable {
     var duration: Int
     var results: [QuestionResult]
     var selfRated: Bool
+    var passed: Bool { !results.isEmpty && results.filter(\.correct).count * 100 >= results.count * 90 }
     var score: Int { results.isEmpty ? 0 : Int((Double(results.filter(\.correct).count) / Double(results.count) * 100).rounded()) }
 }
 struct ReviewRecord: Codable, Identifiable {
@@ -35,6 +36,6 @@ struct LearningProgress: Codable {
     var lessonSteps: [Int: Int] = [:]
     var attempts: [ChallengeAttempt] = []
     var reviews: [ReviewRecord] = []
-    var buildings: Set<Int> { Set(attempts.map(\.challengeID)) }
+    var buildings: Set<Int> { Set(attempts.filter(\.passed).map(\.challengeID)) }
     var completion: Int { Int((Double(completedLessons.count + buildings.count) / 15 * 100).rounded()) }
 }

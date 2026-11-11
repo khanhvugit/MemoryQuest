@@ -7,10 +7,13 @@ struct RetrievalActivityView: View {
             if model.stage == "groupRecall" {
                 PageTitle(text:"Recall the group")
                 Text("The grouped list is hidden. Use the group name as a cue.").font(.subheadline).foregroundStyle(AppTheme.muted)
-                Text("Name two members of \(model.content.categories[model.index]).").font(.title3)
+                Text("Which category includes \(model.groupedTerms[model.index].term)?").font(.title3)
             } else if model.id == 4 {
                 PageTitle(text:"What was in your story?")
-                Text("The story and concept list are hidden. Retrieve all four original \(model.subject.title) terms.")
+                Text("Use your story to retrieve the concept matching this definition.")
+                if let concept = model.content.terms.first(where: { $0.term == model.storyTerms[model.index] }) {
+                    QuestCard { Text(concept.def).font(.title3) }
+                }
             } else if model.id == 5 {
                 PageTitle(text:"Retrieve the concept")
                 QuestCard { Text("Which concept matches this analogy?").font(.caption); Text(model.content.links[model.index].cue).font(.title3) }
@@ -28,7 +31,7 @@ struct RetrievalActivityView: View {
                     if model.hint { Text(item.concept.hint).font(.subheadline) }
                 }
             }
-            AnswerField(text:$model.answer,prompt:[2,4].contains(model.id) ? "Separate the concepts with commas" : "Your answer").disabled(model.feedback != nil)
+            AnswerField(text:$model.answer,prompt:model.id == 2 ? "Category name" : "Your answer").disabled(model.feedback != nil)
             if model.feedback == nil { QuestButton(title:"Check answer",disabled:!model.canCheck) { model.check() } }
         }
     }
@@ -49,3 +52,13 @@ struct FlashcardActivityView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("RetrievalActivityView") {
+    PreviewScreen() { QuestPage { RetrievalActivityView(model: PreviewData.session(0)) } }
+}
+
+#Preview("FlashcardActivityView") {
+    PreviewScreen() { QuestPage { FlashcardActivityView(model: PreviewData.session(1)) } }
+}
+#endif

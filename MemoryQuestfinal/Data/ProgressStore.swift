@@ -29,7 +29,7 @@ import Observation
     }
     @discardableResult func record(_ attempt: ChallengeAttempt) -> Bool {
         guard !progress.attempts.contains(where: { $0.id == attempt.id }) else { return false }
-        let isNew = !progress.buildings.contains(attempt.challengeID)
+        let isNew = attempt.passed && !progress.buildings.contains(attempt.challengeID)
         progress.attempts.append(attempt)
         if [6, 7].contains(attempt.challengeID) {
             for result in attempt.results {

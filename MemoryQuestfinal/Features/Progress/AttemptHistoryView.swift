@@ -3,7 +3,6 @@ import SwiftUI
 struct AttemptHistoryView: View {
     let challengeID: Int
     @Environment(ProgressStore.self) private var store
-    @Environment(AppState.self) private var app
     var body: some View {
         let attempts=store.attempts(challengeID,subject:store.progress.subject).reversed()
         QuestPage {
@@ -18,7 +17,12 @@ struct AttemptHistoryView: View {
                     DisclosureGroup("Review answers and missed ideas") { AttemptAnswersView(results:attempt.results) }
                 }
             }
-            QuestButton(title:attempts.isEmpty ? "View challenge" : "Replay challenge") { app.path.append(.challenge(challengeID)) }
         }.navigationTitle("Previous results")
     }
 }
+
+#if DEBUG
+#Preview("AttemptHistoryView") {
+    PreviewScreen(results: true) { AttemptHistoryView(challengeID: 0) }
+}
+#endif

@@ -1,1 +1,650 @@
-{"terms": [{"term": "Variable", "def": "A named location used to hold a value that can change.", "hint": "A labelled storage container.", "aliases": ["variable"]}, {"term": "Function", "def": "A reusable block of code that performs a specific task.", "hint": "A named tool you can call again.", "aliases": ["function"]}, {"term": "Loop", "def": "A control structure that repeats instructions while a condition holds or for a set number of times.", "hint": "Repeating laps.", "aliases": ["loop"]}, {"term": "Stack", "def": "A collection where the most recently added item is removed first (LIFO).", "hint": "A stack of plates.", "aliases": ["stack"]}, {"term": "Queue", "def": "A collection where the earliest added item is removed first (FIFO).", "hint": "People waiting in line.", "aliases": ["queue"]}, {"term": "Array", "def": "An indexed collection of elements, usually of the same type.", "hint": "Numbered lockers.", "aliases": ["array"]}, {"term": "Algorithm", "def": "A finite sequence of well-defined steps for solving a problem.", "hint": "A step-by-step recipe.", "aliases": ["algorithm"]}, {"term": "Boolean", "def": "A data type with the logical values true and false.", "hint": "A two-state light switch.", "aliases": ["boolean", "bool"]}, {"term": "Database", "def": "An organised collection of data that can be stored, queried, and updated.", "hint": "An organised digital filing system.", "aliases": ["database", "data base"]}, {"term": "Primary key", "def": "A field or set of fields that uniquely identifies each row in a database table.", "hint": "A unique student ID in a student table.", "aliases": ["primary key", "primarykey"]}], "categories": ["Data Structures", "Control Flow", "Data Types"], "groups": [["Stack", "Queue", "Array"], ["If", "For", "While"], ["Integer", "Boolean", "String"]], "links": [{"term": "Stack", "cue": "Stack of plates", "why": "The last plate placed is the first removed. A stack operates in last-in, first-out order."}, {"term": "Queue", "cue": "People waiting in line", "why": "The first person to join is served first. A queue uses first-in, first-out order."}, {"term": "Variable", "cue": "Labelled storage container", "why": "The label names the value. Unlike a physical container, its type rules depend on the programming language."}, {"term": "Loop", "cue": "Running repeated laps", "why": "Instructions repeat. A programming loop has a condition or count; an analogy alone does not specify termination."}], "sequence": ["Read input", "Validate input", "Process data", "Store result", "Format output", "Display result"], "detectives": [{"q": "A text editor must undo the most recent action first. Which data structure fits?", "opts": ["Queue", "Stack", "Boolean", "Database"], "a": 1, "why": "A stack removes the last action added first (LIFO), matching undo order.", "term": "Stack"}, {"q": "A printer should process jobs in the order they arrive. Which structure fits?", "opts": ["Stack", "Function", "Queue", "Primary key"], "a": 2, "why": "A queue serves the earliest job first (FIFO).", "term": "Queue"}, {"q": "You repeat the same tax calculation in five places. How can you organise it?", "opts": ["Copy the code five times", "Store it as a Boolean", "Remove all variables", "Create a reusable function"], "a": 3, "why": "A function packages a specific task so you can call it repeatedly instead of duplicating code.", "term": "Function"}, {"q": "A program must check every item in a shopping list. What structure repeats the check?", "opts": ["Loop", "Primary key", "Stack", "Database"], "a": 0, "why": "A loop repeats instructions for each item, or until a condition changes.", "term": "Loop"}, {"q": "Every student row needs a unique identifier. Which database feature serves this purpose?", "opts": ["Queue", "Primary key", "Loop", "Boolean"], "a": 1, "why": "A primary key uniquely identifies each row and cannot contain null values.", "term": "Primary key"}], "storyTerms": ["Variable", "Function", "Loop", "Queue"], "story": "A variable stores a ticket number. A function checks it. A loop repeats the checks, while a queue serves tickets in arrival order.", "chunks": ["Get ready", "Do the work", "Show the result"], "robots": [{"q": "Explain the difference between a Stack and a Queue.", "example": "A stack removes the most recently added item first (LIFO). A queue removes the earliest added item first (FIFO).", "rules": [{"name": "Names both structures", "patterns": ["stack", "queue"], "all": true}, {"name": "Stack: last in, first out", "patterns": ["stack[^.!?;]*?(lifo|last.in.{0,8}first.out|most recent|last (item|one|added).{0,25}first)"], "all": false}, {"name": "Queue: first in, first out", "patterns": ["queue[^.!?;]*?(fifo|first.in.{0,8}first.out|earliest|arrival order)"], "all": false}]}, {"q": "What does a Function do, and why would you use one?", "example": "A function is a named block of code that performs a specific task. You can call it repeatedly, which allows reuse and reduces duplicate code.", "rules": [{"name": "A block of code or instructions", "patterns": ["block|code|instructions"], "all": false}, {"name": "Performs a task", "patterns": ["task|operation|calculate|calculation|work|purpose"], "all": false}, {"name": "Can be reused or called", "patterns": ["reus|call|repeat|duplicat"], "all": false}]}, {"q": "Explain a Loop and how it stops.", "example": "A loop repeats instructions. A condition or count controls repetition. It stops when the condition is false or the count is reached.", "rules": [{"name": "Repeats instructions", "patterns": ["repeat|iterat|again"], "all": false}, {"name": "Controlled by a condition or count", "patterns": ["condition|count|number of times"], "all": false}, {"name": "Explains stopping", "patterns": ["stop|false|end|terminat|reached|until"], "all": false}]}]}
+{
+  "terms": [
+    {
+      "term": "Variable",
+      "def": "A named location used to hold a value that can change.",
+      "hint": "A labelled storage container.",
+      "aliases": [
+        "variable"
+      ]
+    },
+    {
+      "term": "Function",
+      "def": "A reusable block of code that performs a specific task.",
+      "hint": "A named tool you can call again.",
+      "aliases": [
+        "function"
+      ]
+    },
+    {
+      "term": "Loop",
+      "def": "A control structure that repeats instructions while a condition holds or for a set number of times.",
+      "hint": "Repeating laps.",
+      "aliases": [
+        "loop"
+      ]
+    },
+    {
+      "term": "Stack",
+      "def": "A collection where the most recently added item is removed first (LIFO).",
+      "hint": "A stack of plates.",
+      "aliases": [
+        "stack"
+      ]
+    },
+    {
+      "term": "Queue",
+      "def": "A collection where the earliest added item is removed first (FIFO).",
+      "hint": "People waiting in line.",
+      "aliases": [
+        "queue"
+      ]
+    },
+    {
+      "term": "Array",
+      "def": "An indexed collection of elements, usually of the same type.",
+      "hint": "Numbered lockers.",
+      "aliases": [
+        "array"
+      ]
+    },
+    {
+      "term": "Algorithm",
+      "def": "A finite sequence of well-defined steps for solving a problem.",
+      "hint": "A step-by-step recipe.",
+      "aliases": [
+        "algorithm"
+      ]
+    },
+    {
+      "term": "Boolean",
+      "def": "A data type with the logical values true and false.",
+      "hint": "A two-state light switch.",
+      "aliases": [
+        "boolean",
+        "bool"
+      ]
+    },
+    {
+      "term": "Database",
+      "def": "An organised collection of data that can be stored, queried, and updated.",
+      "hint": "An organised digital filing system.",
+      "aliases": [
+        "database",
+        "data base"
+      ]
+    },
+    {
+      "term": "Primary key",
+      "def": "A field or set of fields that uniquely identifies each row in a database table.",
+      "hint": "A unique student ID in a student table.",
+      "aliases": [
+        "primary key",
+        "primarykey"
+      ]
+    },
+    {
+      "term": "String",
+      "def": "A data type representing a sequence of characters.",
+      "hint": "A line of text.",
+      "aliases": [
+        "string"
+      ]
+    },
+    {
+      "term": "Integer",
+      "def": "A data type representing whole numbers without a fractional part.",
+      "hint": "Count whole items.",
+      "aliases": [
+        "integer",
+        "int"
+      ]
+    }
+  ],
+  "categories": [
+    "Data Structures",
+    "Control Flow",
+    "Data Types"
+  ],
+  "groups": [
+    [
+      "Stack",
+      "Queue",
+      "Array",
+      "Linked list"
+    ],
+    [
+      "If",
+      "For",
+      "While",
+      "Switch"
+    ],
+    [
+      "Integer",
+      "Boolean",
+      "String",
+      "Float"
+    ]
+  ],
+  "links": [
+    {
+      "term": "Stack",
+      "cue": "Stack of plates",
+      "why": "The last plate placed is the first removed. A stack operates in last-in, first-out order."
+    },
+    {
+      "term": "Queue",
+      "cue": "People waiting in line",
+      "why": "The first person to join is served first. A queue uses first-in, first-out order."
+    },
+    {
+      "term": "Variable",
+      "cue": "Labelled storage container",
+      "why": "The label names the value. Unlike a physical container, its type rules depend on the programming language."
+    },
+    {
+      "term": "Loop",
+      "cue": "Running repeated laps",
+      "why": "Instructions repeat. A programming loop has a condition or count; an analogy alone does not specify termination."
+    },
+    {
+      "term": "Function",
+      "cue": "A reusable kitchen appliance",
+      "why": "A function performs a defined task when called; unlike an appliance it is a block of code."
+    },
+    {
+      "term": "Array",
+      "cue": "A row of numbered lockers",
+      "why": "An index selects an element, like a locker number; array elements obey programming-language type rules."
+    },
+    {
+      "term": "Algorithm",
+      "cue": "A finite cooking recipe",
+      "why": "Both specify ordered steps; an algorithm must be precise enough to execute and terminate."
+    },
+    {
+      "term": "Boolean",
+      "cue": "A switch with two positions",
+      "why": "True and false are two logical values; a Boolean does not represent brightness levels."
+    },
+    {
+      "term": "Database",
+      "cue": "An organised filing system",
+      "why": "Records can be stored and queried; a database also enforces structure and supports updates."
+    },
+    {
+      "term": "Primary key",
+      "cue": "A unique student identification number",
+      "why": "The key distinguishes one row from every other row; names alone need not be unique."
+    },
+    {
+      "term": "String",
+      "cue": "A necklace of characters",
+      "why": "Characters have an order, like beads; strings represent text rather than physical objects."
+    },
+    {
+      "term": "Integer",
+      "cue": "A tally of whole objects",
+      "why": "Integers represent whole numbers, including negatives and zero; they do not represent fractions."
+    }
+  ],
+  "sequence": [
+    "Read input",
+    "Validate input",
+    "Process data",
+    "Store result",
+    "Format output",
+    "Display result"
+  ],
+  "detectives": [
+    {
+      "q": "A text editor must undo the most recent action first. Which data structure fits?",
+      "opts": [
+        "Queue",
+        "Stack",
+        "Boolean",
+        "Database"
+      ],
+      "a": 1,
+      "why": "A stack removes the last action added first (LIFO), matching undo order.",
+      "term": "Stack"
+    },
+    {
+      "q": "A printer should process jobs in the order they arrive. Which structure fits?",
+      "opts": [
+        "Stack",
+        "Function",
+        "Queue",
+        "Primary key"
+      ],
+      "a": 2,
+      "why": "A queue serves the earliest job first (FIFO).",
+      "term": "Queue"
+    },
+    {
+      "q": "You repeat the same tax calculation in five places. How can you organise it?",
+      "opts": [
+        "Copy the code five times",
+        "Store it as a Boolean",
+        "Remove all variables",
+        "Create a reusable function"
+      ],
+      "a": 3,
+      "why": "A function packages a specific task so you can call it repeatedly instead of duplicating code.",
+      "term": "Function"
+    },
+    {
+      "q": "A program must check every item in a shopping list. What structure repeats the check?",
+      "opts": [
+        "Loop",
+        "Primary key",
+        "Stack",
+        "Database"
+      ],
+      "a": 0,
+      "why": "A loop repeats instructions for each item, or until a condition changes.",
+      "term": "Loop"
+    },
+    {
+      "q": "Every student row needs a unique identifier. Which database feature serves this purpose?",
+      "opts": [
+        "Queue",
+        "Primary key",
+        "Loop",
+        "Boolean"
+      ],
+      "a": 1,
+      "why": "A primary key uniquely identifies each row and cannot contain null values.",
+      "term": "Primary key"
+    },
+    {
+      "q": "A game needs to store a player's changing score. What named storage should it use?",
+      "term": "Variable",
+      "why": "A variable holds a value that may change.",
+      "opts": [
+        "Function",
+        "Variable",
+        "Loop",
+        "Stack"
+      ],
+      "a": 1
+    },
+    {
+      "q": "You access the fifth item using its index. Which collection is being used?",
+      "term": "Array",
+      "why": "An array provides indexed access to its elements.",
+      "opts": [
+        "Variable",
+        "Function",
+        "Array",
+        "Loop"
+      ],
+      "a": 2
+    },
+    {
+      "q": "A program stores whether a user is signed in as true or false. Which type fits?",
+      "term": "Boolean",
+      "why": "A Boolean represents one of two logical values.",
+      "opts": [
+        "Variable",
+        "Function",
+        "Loop",
+        "Boolean"
+      ],
+      "a": 3
+    },
+    {
+      "q": "A library needs to store and query thousands of book records. What should organise them?",
+      "term": "Database",
+      "why": "A database stores organised data and supports queries.",
+      "opts": [
+        "Database",
+        "Variable",
+        "Function",
+        "Loop"
+      ],
+      "a": 0
+    },
+    {
+      "q": "You specify a finite, precise set of steps to sort numbers. What have you described?",
+      "term": "Algorithm",
+      "why": "An algorithm is a finite sequence of well-defined steps.",
+      "opts": [
+        "Variable",
+        "Algorithm",
+        "Function",
+        "Loop"
+      ],
+      "a": 1
+    },
+    {
+      "q": "A form stores the text of a person's name. Which data type fits?",
+      "term": "String",
+      "why": "A string represents a sequence of characters.",
+      "opts": [
+        "Variable",
+        "Function",
+        "String",
+        "Loop"
+      ],
+      "a": 2
+    },
+    {
+      "q": "A counter tracks a whole number of available seats. Which type fits?",
+      "term": "Integer",
+      "why": "An integer represents whole numbers without fractional parts.",
+      "opts": [
+        "Variable",
+        "Function",
+        "Loop",
+        "Integer"
+      ],
+      "a": 3
+    }
+  ],
+  "storyTerms": [
+    "Variable",
+    "Function",
+    "Loop",
+    "Stack",
+    "Queue",
+    "Array",
+    "Algorithm",
+    "Boolean",
+    "Database",
+    "Primary key",
+    "String",
+    "Integer"
+  ],
+  "story": "A Variable holds a ticket number as an Integer, while a String holds the visitor's name. A Function follows an Algorithm to process the ticket. A Loop visits each entry in an Array. A Boolean records whether entry is allowed. A Queue serves visitors in arrival order, while a Stack holds actions that can be undone. A Database stores each visitor under a unique Primary key.",
+  "chunks": [
+    "Get ready",
+    "Do the work",
+    "Show the result"
+  ],
+  "robots": [
+    {
+      "q": "Explain the difference between a Stack and a Queue.",
+      "example": "A stack removes the most recently added item first (LIFO). A queue removes the earliest added item first (FIFO).",
+      "rules": [
+        {
+          "name": "Names both structures",
+          "patterns": [
+            "stack",
+            "queue"
+          ],
+          "all": true
+        },
+        {
+          "name": "Stack: last in, first out",
+          "patterns": [
+            "stack[^.!?;]*?(lifo|last.in.{0,8}first.out|most recent|last (item|one|added).{0,25}first)"
+          ],
+          "all": false
+        },
+        {
+          "name": "Queue: first in, first out",
+          "patterns": [
+            "queue[^.!?;]*?(fifo|first.in.{0,8}first.out|earliest|arrival order)"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What does a Function do, and why would you use one?",
+      "example": "A function is a named block of code that performs a specific task. You can call it repeatedly, which allows reuse and reduces duplicate code.",
+      "rules": [
+        {
+          "name": "A block of code or instructions",
+          "patterns": [
+            "block|code|instructions"
+          ],
+          "all": false
+        },
+        {
+          "name": "Performs a task",
+          "patterns": [
+            "task|operation|calculate|calculation|work|purpose"
+          ],
+          "all": false
+        },
+        {
+          "name": "Can be reused or called",
+          "patterns": [
+            "reus|call|repeat|duplicat"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain a Loop and how it stops.",
+      "example": "A loop repeats instructions. A condition or count controls repetition. It stops when the condition is false or the count is reached.",
+      "rules": [
+        {
+          "name": "Repeats instructions",
+          "patterns": [
+            "repeat|iterat|again"
+          ],
+          "all": false
+        },
+        {
+          "name": "Controlled by a condition or count",
+          "patterns": [
+            "condition|count|number of times"
+          ],
+          "all": false
+        },
+        {
+          "name": "Explains stopping",
+          "patterns": [
+            "stop|false|end|terminat|reached|until"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain what a variable represents.",
+      "example": "A variable is named storage for a value that can change.",
+      "rules": [
+        {
+          "name": "Named storage",
+          "patterns": [
+            "name|label"
+          ],
+          "all": false
+        },
+        {
+          "name": "Stores a value",
+          "patterns": [
+            "stor|hold|value"
+          ],
+          "all": false
+        },
+        {
+          "name": "Can change",
+          "patterns": [
+            "chang|updat"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain how an array organises its elements.",
+      "example": "An array is an ordered collection whose elements can be accessed by index.",
+      "rules": [
+        {
+          "name": "Collection of elements",
+          "patterns": [
+            "collection|elements|items"
+          ],
+          "all": false
+        },
+        {
+          "name": "Indexed access",
+          "patterns": [
+            "index|position"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What makes a procedure an algorithm?",
+      "example": "An algorithm is a finite sequence of well-defined steps for solving a problem.",
+      "rules": [
+        {
+          "name": "Finite steps",
+          "patterns": [
+            "finite|terminat"
+          ],
+          "all": false
+        },
+        {
+          "name": "Precise steps",
+          "patterns": [
+            "step|instruction"
+          ],
+          "all": false
+        },
+        {
+          "name": "Solves a problem",
+          "patterns": [
+            "problem|task"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain a Boolean and give its two values.",
+      "example": "A Boolean is a logical data type whose values are true and false.",
+      "rules": [
+        {
+          "name": "True and false",
+          "patterns": [
+            "true.*false|false.*true"
+          ],
+          "all": false
+        },
+        {
+          "name": "Logical type",
+          "patterns": [
+            "logical|logic|type"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What is a database used for?",
+      "example": "A database stores organised data that can be queried and updated.",
+      "rules": [
+        {
+          "name": "Stores data",
+          "patterns": [
+            "stor|data"
+          ],
+          "all": false
+        },
+        {
+          "name": "Retrieves data",
+          "patterns": [
+            "quer|retriev|search"
+          ],
+          "all": false
+        },
+        {
+          "name": "Updates data",
+          "patterns": [
+            "updat|modif"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain why a table needs a primary key.",
+      "example": "A primary key uniquely identifies each row of a database table.",
+      "rules": [
+        {
+          "name": "Unique identification",
+          "patterns": [
+            "unique|distinct"
+          ],
+          "all": false
+        },
+        {
+          "name": "Identifies a row",
+          "patterns": [
+            "row|record"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain what a string represents.",
+      "example": "A string is an ordered sequence of characters used to represent text.",
+      "rules": [
+        {
+          "name": "Characters",
+          "patterns": [
+            "character"
+          ],
+          "all": false
+        },
+        {
+          "name": "Text",
+          "patterns": [
+            "text"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "How does an integer differ from a fractional number?",
+      "example": "An integer represents a whole number without a fractional part.",
+      "rules": [
+        {
+          "name": "Whole numbers",
+          "patterns": [
+            "whole"
+          ],
+          "all": false
+        },
+        {
+          "name": "No fractional part",
+          "patterns": [
+            "without.*fraction|no.*fraction|not.*fraction"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Why is choosing a queue useful for first-come-first-served requests?",
+      "example": "A queue uses FIFO so the earliest request is handled first.",
+      "rules": [
+        {
+          "name": "Queue order",
+          "patterns": [
+            "fifo|first.in.*first.out"
+          ],
+          "all": false
+        },
+        {
+          "name": "Earliest request first",
+          "patterns": [
+            "earliest|arrival|first.come"
+          ],
+          "all": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,1 +1,682 @@
-{"terms": [{"term": "Nucleus", "hint": "The cell’s archive.", "aliases": ["nucleus"], "def": "The membrane-bound structure that contains most of the DNA in a eukaryotic cell."}, {"term": "Ribosome", "hint": "A protein-building workshop.", "aliases": ["ribosome", "ribosomes"], "def": "A structure that translates messenger RNA and joins amino acids into a polypeptide."}, {"term": "Mitochondrion", "hint": "Energy conversion, not energy creation.", "aliases": ["mitochondrion", "mitochondria"], "def": "An organelle where most ATP is produced during aerobic respiration in a eukaryotic cell."}, {"term": "Diffusion", "hint": "Particles spread down a concentration gradient.", "aliases": ["diffusion"], "def": "The net movement of particles from higher to lower concentration due to random motion."}, {"term": "Osmosis", "hint": "Water crossing a selective barrier.", "aliases": ["osmosis"], "def": "The net movement of water across a selectively permeable membrane from higher to lower water potential."}, {"term": "Active transport", "hint": "An energy-requiring membrane pump.", "aliases": ["active transport"], "def": "Movement of substances across a membrane against their concentration gradient using energy."}, {"term": "Protein", "hint": "A folded amino-acid chain.", "aliases": ["protein", "proteins"], "def": "A biological molecule made of one or more chains of amino acids folded into a functional shape."}, {"term": "Enzyme", "hint": "A reusable reaction helper.", "aliases": ["enzyme", "enzymes"], "def": "A biological catalyst, usually a protein, that speeds up a reaction without being consumed."}, {"term": "Messenger RNA", "hint": "A working copy of a gene.", "aliases": ["messenger rna", "mrna", "m rna"], "def": "An RNA molecule that carries a transcribed genetic message to a ribosome for translation."}, {"term": "Cell membrane", "hint": "A selective gateway.", "aliases": ["cell membrane", "plasma membrane"], "def": "A selectively permeable boundary that controls movement of substances into and out of a cell."}], "categories": ["Cell Structures", "Biomolecules", "Transport Processes"], "groups": [["Nucleus", "Ribosome", "Mitochondrion"], ["Protein", "Lipid", "Carbohydrate"], ["Diffusion", "Osmosis", "Active transport"]], "sequence": ["Unwind the DNA", "Transcribe messenger RNA", "Move mRNA to a ribosome", "Read the mRNA codons", "Join amino acids", "Fold the protein"], "chunks": ["Transcription", "Translation begins", "Build a protein"], "storyTerms": ["Nucleus", "Messenger RNA", "Ribosome", "Protein"], "story": "Inside the nucleus, a gene is transcribed into messenger RNA. The messenger RNA carries the instructions to a ribosome, which joins amino acids to build a protein.", "links": [{"term": "Nucleus", "cue": "An archive of instructions", "why": "The nucleus stores most eukaryotic DNA. Unlike an archive, it is a living cellular compartment and does not make conscious decisions."}, {"term": "Ribosome", "cue": "An assembly workshop", "why": "Ribosomes read mRNA and join amino acids. The analogy does not show molecular interactions."}, {"term": "Messenger RNA", "cue": "A working copy of a recipe", "why": "mRNA carries a transcribed message to a ribosome. It is not a permanent copy of the entire genome."}, {"term": "Cell membrane", "cue": "A selective gateway", "why": "The membrane regulates passage. It is a dynamic lipid bilayer, not a solid wall."}], "detectives": [{"q": "A cell needs to assemble amino acids according to mRNA instructions. Which structure performs this task?", "opts": ["Nucleus", "Ribosome", "Cell membrane", "Mitochondrion"], "a": 1, "why": "Ribosomes translate mRNA into a polypeptide.", "term": "Ribosome"}, {"q": "Water moves across a selectively permeable membrane down its water-potential gradient. What is this process?", "opts": ["Active transport", "Diffusion of protein", "Osmosis", "Translation"], "a": 2, "why": "Osmosis describes net water movement across a selectively permeable membrane.", "term": "Osmosis"}, {"q": "A cell pumps ions from low to high concentration using energy. Which process is this?", "opts": ["Diffusion", "Osmosis", "Translation", "Active transport"], "a": 3, "why": "Active transport uses energy to move substances against a concentration gradient.", "term": "Active transport"}, {"q": "Which molecule carries a transcribed gene message to a ribosome?", "opts": ["Protein", "Messenger RNA", "Lipid", "Enzyme"], "a": 1, "why": "Messenger RNA carries the message used during translation.", "term": "Messenger RNA"}, {"q": "A reaction needs to proceed faster without consuming its catalyst. What can help?", "opts": ["Enzyme", "Cell membrane", "Nucleus", "Carbohydrate"], "a": 0, "why": "An enzyme lowers the activation energy and is not consumed by the reaction.", "term": "Enzyme"}], "robots": [{"q": "Explain how diffusion differs from active transport.", "example": "Diffusion is net movement down a concentration gradient. Active transport moves substances against a gradient and requires energy.", "rules": [{"name": "Diffusion moves down a gradient", "patterns": ["diffusion[^.!?;]*(down|higher to lower|high to low)"], "all": false}, {"name": "Active transport moves against a gradient", "patterns": ["active transport[^.!?;]*(against|low to high|lower to higher)"], "all": false}, {"name": "Active transport requires energy", "patterns": ["active transport[^.!?;]*(energy|atp)"], "all": false}]}, {"q": "What does a ribosome do?", "example": "A ribosome reads mRNA and joins amino acids to build a polypeptide.", "rules": [{"name": "Reads messenger RNA", "patterns": ["mrna|messenger rna"], "all": false}, {"name": "Joins amino acids", "patterns": ["amino acid"], "all": false}, {"name": "Builds a protein or polypeptide", "patterns": ["protein|polypeptide"], "all": false}]}, {"q": "Explain an enzyme and its role.", "example": "An enzyme is a biological catalyst that speeds up a reaction without being consumed.", "rules": [{"name": "A catalyst", "patterns": ["catalyst|catalys"], "all": false}, {"name": "Speeds a reaction", "patterns": ["speed|activation energy|faster"], "all": false}, {"name": "Not consumed", "patterns": ["not consumed|reus|unchanged|not used up"], "all": false}]}]}
+{
+  "terms": [
+    {
+      "term": "Nucleus",
+      "hint": "The cell’s archive.",
+      "aliases": [
+        "nucleus"
+      ],
+      "def": "The membrane-bound structure that contains most of the DNA in a eukaryotic cell."
+    },
+    {
+      "term": "Ribosome",
+      "hint": "A protein-building workshop.",
+      "aliases": [
+        "ribosome",
+        "ribosomes"
+      ],
+      "def": "A structure that translates messenger RNA and joins amino acids into a polypeptide."
+    },
+    {
+      "term": "Mitochondrion",
+      "hint": "Energy conversion, not energy creation.",
+      "aliases": [
+        "mitochondrion",
+        "mitochondria"
+      ],
+      "def": "An organelle where most ATP is produced during aerobic respiration in a eukaryotic cell."
+    },
+    {
+      "term": "Diffusion",
+      "hint": "Particles spread down a concentration gradient.",
+      "aliases": [
+        "diffusion"
+      ],
+      "def": "The net movement of particles from higher to lower concentration due to random motion."
+    },
+    {
+      "term": "Osmosis",
+      "hint": "Water crossing a selective barrier.",
+      "aliases": [
+        "osmosis"
+      ],
+      "def": "The net movement of water across a selectively permeable membrane from higher to lower water potential."
+    },
+    {
+      "term": "Active transport",
+      "hint": "An energy-requiring membrane pump.",
+      "aliases": [
+        "active transport"
+      ],
+      "def": "Movement of substances across a membrane against their concentration gradient using energy."
+    },
+    {
+      "term": "Protein",
+      "hint": "A folded amino-acid chain.",
+      "aliases": [
+        "protein",
+        "proteins"
+      ],
+      "def": "A biological molecule made of one or more chains of amino acids folded into a functional shape."
+    },
+    {
+      "term": "Enzyme",
+      "hint": "A reusable reaction helper.",
+      "aliases": [
+        "enzyme",
+        "enzymes"
+      ],
+      "def": "A biological catalyst, usually a protein, that speeds up a reaction without being consumed."
+    },
+    {
+      "term": "Messenger RNA",
+      "hint": "A working copy of a gene.",
+      "aliases": [
+        "messenger rna",
+        "mrna",
+        "m rna"
+      ],
+      "def": "An RNA molecule that carries a transcribed genetic message to a ribosome for translation."
+    },
+    {
+      "term": "Cell membrane",
+      "hint": "A selective gateway.",
+      "aliases": [
+        "cell membrane",
+        "plasma membrane"
+      ],
+      "def": "A selectively permeable boundary that controls movement of substances into and out of a cell."
+    },
+    {
+      "term": "Chloroplast",
+      "def": "An organelle in plants and algae where photosynthesis takes place.",
+      "hint": "A light-powered sugar factory.",
+      "aliases": [
+        "chloroplast",
+        "chloroplasts"
+      ]
+    },
+    {
+      "term": "DNA",
+      "def": "The molecule that stores hereditary information in a sequence of nucleotide bases.",
+      "hint": "The inherited instruction library.",
+      "aliases": [
+        "dna",
+        "deoxyribonucleic acid"
+      ]
+    }
+  ],
+  "categories": [
+    "Cell Structures",
+    "Biomolecules",
+    "Transport Processes"
+  ],
+  "groups": [
+    [
+      "Nucleus",
+      "Ribosome",
+      "Mitochondrion",
+      "Chloroplast"
+    ],
+    [
+      "Protein",
+      "Lipid",
+      "Carbohydrate",
+      "DNA"
+    ],
+    [
+      "Diffusion",
+      "Osmosis",
+      "Active transport",
+      "Facilitated diffusion"
+    ]
+  ],
+  "sequence": [
+    "Unwind the DNA",
+    "Transcribe messenger RNA",
+    "Move mRNA to a ribosome",
+    "Read the mRNA codons",
+    "Join amino acids",
+    "Fold the protein"
+  ],
+  "chunks": [
+    "Transcription",
+    "Translation begins",
+    "Build a protein"
+  ],
+  "storyTerms": [
+    "Nucleus",
+    "Ribosome",
+    "Mitochondrion",
+    "Diffusion",
+    "Osmosis",
+    "Active transport",
+    "Protein",
+    "Enzyme",
+    "Messenger RNA",
+    "Cell membrane",
+    "Chloroplast",
+    "DNA"
+  ],
+  "story": "In a plant cell, the Nucleus stores DNA. Messenger RNA carries a gene's message to a Ribosome, which builds a Protein. An Enzyme speeds a reaction without being consumed. A Mitochondrion supplies ATP through respiration, while a Chloroplast uses light for photosynthesis. The Cell membrane regulates exchange: Diffusion moves particles down a concentration gradient, Osmosis moves water across a selective membrane, and Active transport uses energy to move substances against a gradient.",
+  "links": [
+    {
+      "term": "Nucleus",
+      "cue": "An archive of instructions",
+      "why": "The nucleus stores most eukaryotic DNA. Unlike an archive, it is a living cellular compartment and does not make conscious decisions."
+    },
+    {
+      "term": "Ribosome",
+      "cue": "An assembly workshop",
+      "why": "Ribosomes read mRNA and join amino acids. The analogy does not show molecular interactions."
+    },
+    {
+      "term": "Messenger RNA",
+      "cue": "A working copy of a recipe",
+      "why": "mRNA carries a transcribed message to a ribosome. It is not a permanent copy of the entire genome."
+    },
+    {
+      "term": "Cell membrane",
+      "cue": "A selective gateway",
+      "why": "The membrane regulates passage. It is a dynamic lipid bilayer, not a solid wall."
+    },
+    {
+      "term": "Mitochondrion",
+      "cue": "An energy-conversion station",
+      "why": "Mitochondria convert chemical energy into ATP during aerobic respiration; they do not create energy."
+    },
+    {
+      "term": "Diffusion",
+      "cue": "Perfume spreading through a room",
+      "why": "Random motion produces net movement down a concentration gradient; no conscious direction is involved."
+    },
+    {
+      "term": "Osmosis",
+      "cue": "Water passing through a selective filter",
+      "why": "Water moves across a selectively permeable membrane down its water-potential gradient; not every filter models osmosis."
+    },
+    {
+      "term": "Active transport",
+      "cue": "An energy-powered uphill conveyor",
+      "why": "Substances move against a concentration gradient using energy; cells use molecular transport proteins."
+    },
+    {
+      "term": "Protein",
+      "cue": "A folded chain with a specific job",
+      "why": "Amino-acid sequence and folding support function; not every protein has the same shape or role."
+    },
+    {
+      "term": "Enzyme",
+      "cue": "A reusable reaction helper",
+      "why": "An enzyme speeds a reaction without being consumed; the helper analogy does not describe molecular binding."
+    },
+    {
+      "term": "Chloroplast",
+      "cue": "A light-powered sugar factory",
+      "why": "Chloroplasts use light energy to make carbohydrates through photosynthesis; they are organelles, not buildings."
+    },
+    {
+      "term": "DNA",
+      "cue": "An inherited instruction library",
+      "why": "The base sequence stores hereditary information; DNA is a molecule rather than written language."
+    }
+  ],
+  "detectives": [
+    {
+      "q": "A cell needs to assemble amino acids according to mRNA instructions. Which structure performs this task?",
+      "opts": [
+        "Nucleus",
+        "Ribosome",
+        "Cell membrane",
+        "Mitochondrion"
+      ],
+      "a": 1,
+      "why": "Ribosomes translate mRNA into a polypeptide.",
+      "term": "Ribosome"
+    },
+    {
+      "q": "Water moves across a selectively permeable membrane down its water-potential gradient. What is this process?",
+      "opts": [
+        "Active transport",
+        "Diffusion of protein",
+        "Osmosis",
+        "Translation"
+      ],
+      "a": 2,
+      "why": "Osmosis describes net water movement across a selectively permeable membrane.",
+      "term": "Osmosis"
+    },
+    {
+      "q": "A cell pumps ions from low to high concentration using energy. Which process is this?",
+      "opts": [
+        "Diffusion",
+        "Osmosis",
+        "Translation",
+        "Active transport"
+      ],
+      "a": 3,
+      "why": "Active transport uses energy to move substances against a concentration gradient.",
+      "term": "Active transport"
+    },
+    {
+      "q": "Which molecule carries a transcribed gene message to a ribosome?",
+      "opts": [
+        "Protein",
+        "Messenger RNA",
+        "Lipid",
+        "Enzyme"
+      ],
+      "a": 1,
+      "why": "Messenger RNA carries the message used during translation.",
+      "term": "Messenger RNA"
+    },
+    {
+      "q": "A reaction needs to proceed faster without consuming its catalyst. What can help?",
+      "opts": [
+        "Enzyme",
+        "Cell membrane",
+        "Nucleus",
+        "Carbohydrate"
+      ],
+      "a": 0,
+      "why": "An enzyme lowers the activation energy and is not consumed by the reaction.",
+      "term": "Enzyme"
+    },
+    {
+      "q": "Where is most DNA stored in a typical eukaryotic cell?",
+      "term": "Nucleus",
+      "why": "The nucleus contains most of a eukaryotic cell's DNA.",
+      "opts": [
+        "Ribosome",
+        "Nucleus",
+        "Mitochondrion",
+        "Diffusion"
+      ],
+      "a": 1
+    },
+    {
+      "q": "Which organelle produces most ATP during aerobic respiration in a eukaryotic cell?",
+      "term": "Mitochondrion",
+      "why": "Mitochondria carry out key stages of aerobic respiration that produce ATP.",
+      "opts": [
+        "Nucleus",
+        "Ribosome",
+        "Mitochondrion",
+        "Diffusion"
+      ],
+      "a": 2
+    },
+    {
+      "q": "Oxygen spreads from a region of higher concentration to lower concentration. What process explains this?",
+      "term": "Diffusion",
+      "why": "Diffusion is net movement down a concentration gradient due to random motion.",
+      "opts": [
+        "Nucleus",
+        "Ribosome",
+        "Mitochondrion",
+        "Diffusion"
+      ],
+      "a": 3
+    },
+    {
+      "q": "A molecule consists of amino acids folded into a functional shape. What is it?",
+      "term": "Protein",
+      "why": "Proteins consist of one or more folded amino-acid chains.",
+      "opts": [
+        "Protein",
+        "Nucleus",
+        "Ribosome",
+        "Mitochondrion"
+      ],
+      "a": 0
+    },
+    {
+      "q": "Which cell boundary regulates substances entering and leaving?",
+      "term": "Cell membrane",
+      "why": "The selectively permeable membrane regulates movement across the cell boundary.",
+      "opts": [
+        "Nucleus",
+        "Cell membrane",
+        "Ribosome",
+        "Mitochondrion"
+      ],
+      "a": 1
+    },
+    {
+      "q": "Which organelle uses light energy for photosynthesis in a leaf cell?",
+      "term": "Chloroplast",
+      "why": "Photosynthesis takes place in chloroplasts.",
+      "opts": [
+        "Nucleus",
+        "Ribosome",
+        "Chloroplast",
+        "Mitochondrion"
+      ],
+      "a": 2
+    },
+    {
+      "q": "Which molecule stores hereditary information in its base sequence?",
+      "term": "DNA",
+      "why": "DNA stores hereditary information in its sequence of nucleotide bases.",
+      "opts": [
+        "Nucleus",
+        "Ribosome",
+        "Mitochondrion",
+        "DNA"
+      ],
+      "a": 3
+    }
+  ],
+  "robots": [
+    {
+      "q": "Explain how diffusion differs from active transport.",
+      "example": "Diffusion is net movement down a concentration gradient. Active transport moves substances against a gradient and requires energy.",
+      "rules": [
+        {
+          "name": "Diffusion moves down a gradient",
+          "patterns": [
+            "diffusion[^.!?;]*(down|higher to lower|high to low)"
+          ],
+          "all": false
+        },
+        {
+          "name": "Active transport moves against a gradient",
+          "patterns": [
+            "active transport[^.!?;]*(against|low to high|lower to higher)"
+          ],
+          "all": false
+        },
+        {
+          "name": "Active transport requires energy",
+          "patterns": [
+            "active transport[^.!?;]*(energy|atp)"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What does a ribosome do?",
+      "example": "A ribosome reads mRNA and joins amino acids to build a polypeptide.",
+      "rules": [
+        {
+          "name": "Reads messenger RNA",
+          "patterns": [
+            "mrna|messenger rna"
+          ],
+          "all": false
+        },
+        {
+          "name": "Joins amino acids",
+          "patterns": [
+            "amino acid"
+          ],
+          "all": false
+        },
+        {
+          "name": "Builds a protein or polypeptide",
+          "patterns": [
+            "protein|polypeptide"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain an enzyme and its role.",
+      "example": "An enzyme is a biological catalyst that speeds up a reaction without being consumed.",
+      "rules": [
+        {
+          "name": "A catalyst",
+          "patterns": [
+            "catalyst|catalys"
+          ],
+          "all": false
+        },
+        {
+          "name": "Speeds a reaction",
+          "patterns": [
+            "speed|activation energy|faster"
+          ],
+          "all": false
+        },
+        {
+          "name": "Not consumed",
+          "patterns": [
+            "not consumed|without being consumed|reus|unchanged|not used up"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What does the nucleus contain in a eukaryotic cell?",
+      "example": "The nucleus is a membrane-bound compartment containing most of the cell's DNA.",
+      "rules": [
+        {
+          "name": "Contains DNA",
+          "patterns": [
+            "dna|genetic"
+          ],
+          "all": false
+        },
+        {
+          "name": "Membrane bound",
+          "patterns": [
+            "membrane"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain the role of a mitochondrion.",
+      "example": "A mitochondrion produces ATP during aerobic respiration by converting chemical energy.",
+      "rules": [
+        {
+          "name": "ATP production",
+          "patterns": [
+            "atp"
+          ],
+          "all": false
+        },
+        {
+          "name": "Aerobic respiration",
+          "patterns": [
+            "aerobic|respiration"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain osmosis.",
+      "example": "Osmosis is net movement of water across a selectively permeable membrane down a water-potential gradient.",
+      "rules": [
+        {
+          "name": "Water",
+          "patterns": [
+            "water"
+          ],
+          "all": false
+        },
+        {
+          "name": "Selective membrane",
+          "patterns": [
+            "membrane"
+          ],
+          "all": false
+        },
+        {
+          "name": "Down a gradient",
+          "patterns": [
+            "down|higher to lower|high to low"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What is a protein made of and why does its shape matter?",
+      "example": "A protein is made of amino acids, and its folded shape helps determine its function.",
+      "rules": [
+        {
+          "name": "Amino acids",
+          "patterns": [
+            "amino acid"
+          ],
+          "all": false
+        },
+        {
+          "name": "Folding or shape",
+          "patterns": [
+            "fold|shape"
+          ],
+          "all": false
+        },
+        {
+          "name": "Function",
+          "patterns": [
+            "function|role|job"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "Explain the role of messenger RNA.",
+      "example": "Messenger RNA carries a transcribed genetic message to a ribosome for translation.",
+      "rules": [
+        {
+          "name": "Genetic message",
+          "patterns": [
+            "message|instruction|genetic"
+          ],
+          "all": false
+        },
+        {
+          "name": "Ribosome",
+          "patterns": [
+            "ribosome"
+          ],
+          "all": false
+        },
+        {
+          "name": "Translation",
+          "patterns": [
+            "translat|protein"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "How does the cell membrane regulate exchange?",
+      "example": "The cell membrane is selectively permeable, controlling what enters and leaves the cell.",
+      "rules": [
+        {
+          "name": "Selective permeability",
+          "patterns": [
+            "selectiv|permeab"
+          ],
+          "all": false
+        },
+        {
+          "name": "Movement in and out",
+          "patterns": [
+            "enter|leav|in and out|exchange"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "What happens in a chloroplast?",
+      "example": "A chloroplast uses light energy during photosynthesis to make carbohydrates.",
+      "rules": [
+        {
+          "name": "Light energy",
+          "patterns": [
+            "light"
+          ],
+          "all": false
+        },
+        {
+          "name": "Photosynthesis",
+          "patterns": [
+            "photosynth"
+          ],
+          "all": false
+        },
+        {
+          "name": "Carbohydrates",
+          "patterns": [
+            "carbohydrat|sugar|glucose"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "How does DNA store hereditary information?",
+      "example": "DNA stores hereditary information in the sequence of its nucleotide bases.",
+      "rules": [
+        {
+          "name": "Hereditary information",
+          "patterns": [
+            "heredit|genetic|inherit"
+          ],
+          "all": false
+        },
+        {
+          "name": "Base sequence",
+          "patterns": [
+            "base|nucleotide"
+          ],
+          "all": false
+        },
+        {
+          "name": "Sequence",
+          "patterns": [
+            "sequence|order"
+          ],
+          "all": false
+        }
+      ]
+    },
+    {
+      "q": "How are transcription and translation connected?",
+      "example": "Transcription produces mRNA from DNA; translation uses mRNA at a ribosome to build a polypeptide.",
+      "rules": [
+        {
+          "name": "Transcription",
+          "patterns": [
+            "transcri"
+          ],
+          "all": false
+        },
+        {
+          "name": "Messenger RNA",
+          "patterns": [
+            "mrna|messenger rna"
+          ],
+          "all": false
+        },
+        {
+          "name": "Translation",
+          "patterns": [
+            "translat"
+          ],
+          "all": false
+        },
+        {
+          "name": "Protein production",
+          "patterns": [
+            "protein|polypeptide"
+          ],
+          "all": false
+        }
+      ]
+    }
+  ]
+}

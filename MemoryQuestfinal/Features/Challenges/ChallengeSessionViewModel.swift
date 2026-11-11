@@ -37,7 +37,7 @@ struct ReviewConcept {
         self.id=id; self.subject=subject; self.difficulty=difficulty
         content=ContentRepository.content(subject)
         let terms=ContentRepository.content(subject).terms
-        deck=Array(terms.prefix(difficulty == .hard ? 10 : 8)).map { ReviewConcept(concept:$0,lastSeen:nil,missed:false) }
+        deck=Array(terms.prefix(difficulty.questionCount)).map { ReviewConcept(concept:$0,lastSeen:nil,missed:false) }
         if [1,6,7,8,9].contains(id) { stage="play" }
         if [6,7].contains(id) {
             let relevant=history.filter { $0.subject == subject && !$0.selfRated }
@@ -45,10 +45,29 @@ struct ReviewConcept {
                 let prior=relevant.flatMap { attempt in attempt.results.filter { $0.conceptID == t.id }.map { ($0,attempt.date) } }.last
                 return ReviewConcept(concept:t,lastSeen:prior?.1,missed:prior.map { !$0.0.correct } ?? [3,4,2,1].contains(i))
             }.sorted { a,b in a.missed != b.missed ? a.missed : (a.lastSeen ?? .distantPast) < (b.lastSeen ?? .distantPast) }
-            deck=Array(ranked.prefix(id == 7 ? 4 : (difficulty == .hard ? 6 : 4)))
+            deck=Array(ranked.prefix(difficulty.questionCount))
         }
     }
-    var total: Int { stage == "groupRecall" ? 3 : id == 5 ? content.links.count : id == 8 ? content.robots.count : id == 9 ? content.detectives.count : deck.count }
+    var total: Int { retried ? deck.count : difficulty.questionCount }
+    // Interleave categories so even the shortest session practises each category.
+    var groupedTerms: [(term: String, category: Int)] {
+        Array((0..<4).flatMap { position in
+            content.groups.indices.map { category in
+                (term: content.groups[category][position], category: category)
+            }
+        }.prefix(difficulty.questionCount))
+    }
+    var storyTerms: [String] { Array(content.storyTerms.prefix(difficulty.questionCount)) }
+    // Distinct contiguous windows retain the original process's meaningful order.
+    var sequenceQuestions: [[String]] {
+        (2...4).flatMap { length in
+            (0...(content.sequence.count - length)).map { start in
+                Array(content.sequence[start..<(start + length)])
+            }
+        }
+    }
+    var currentSequence: [String] { sequenceQuestions[index] }
+    var links: [Analogy] { Array(content.links.prefix(difficulty.questionCount)) }
     var canCheck: Bool { id == 9 ? choice >= 0 : !answer.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty }
     func record(_ term: String, answer: String, expected: String, correct: Bool, explanation: String = "", delayed: Bool = false, sample: Bool = false) {
         results.append(QuestionResult(conceptID:Answer.normalise(term),term:term,answer:answer,expected:expected,explanation:explanation,correct:correct,delayed:delayed,sample:sample))
@@ -56,44 +75,47 @@ struct ReviewConcept {
     func beginRecall() { stage="play"; index=0; feedback=nil; validation=nil; answer=""; groups=[:] }
     func checkGroups() {
         guard feedback == nil else { return }
-        guard groups.count == 9, groups.values.allSatisfy({ (0..<3).contains($0) }) else { validation="Choose a category for every term, then check your groups."; return }
-        var count=0
-        for i in 0..<9 {
-            let term=content.groups[i/3][i%3], selected=groups[i,default:0], correct=selected == i/3
-            if correct { count += 1 }
-            record(term,answer:content.categories[selected],expected:content.categories[i/3],correct:correct,explanation:"\(term) belongs to \(content.categories[i/3]).")
+        guard groups.count == groupedTerms.count,
+              groups.values.allSatisfy({ content.categories.indices.contains($0) }) else {
+            validation = "Choose a category for every term, then check your groups."
+            return
         }
-        feedbackCorrect=count == 9
-        feedback="\(count)/9 grouped correctly.\n\n" + (0..<3).map { content.categories[$0]+": "+content.groups[$0].joined(separator:", ") }.joined(separator:"\n\n") + "\n\nUse the group labels as cues. Next, the list will be hidden."
+        let count = groupedTerms.indices.filter { groups[$0] == groupedTerms[$0].category }.count
+        feedbackCorrect = count == groupedTerms.count
+        feedback = "\(count)/\(groupedTerms.count) grouped correctly.\n\n" +
+            groupedTerms.map { "\($0.term) → \(content.categories[$0.category])" }.joined(separator: "\n") +
+            "\n\nNext, hide the groups and recall each category."
+
         validation=nil
     }
     func groupRecall() { stage="groupRecall"; feedback=nil; answer=""; index=0; groups=[:] }
     func checkLinks() {
         guard feedback == nil else { return }
-        guard groups.count == content.links.count, groups.values.allSatisfy({ (0..<content.links.count).contains($0) }) else { validation="Select an analogy for every concept."; return }
+        guard groups.count == links.count, groups.values.allSatisfy({ (0..<links.count).contains($0) }) else { validation="Select an analogy for every concept."; return }
         var count=0
-        for i in content.links.indices {
-            let link=content.links[i], chosen=groups[i,default:0], correct=chosen == i
+        for i in links.indices {
+            let chosen=groups[i,default:0], correct=chosen == i
             if correct { count += 1 }
-            record(link.term,answer:content.links[chosen].cue,expected:link.cue,correct:correct,explanation:link.why)
         }
-        feedbackCorrect=count == content.links.count
-        feedback="\(count)/4 connections matched.\n\n"+content.links.map { "\($0.term) → \($0.cue)\n\($0.why)" }.joined(separator:"\n\n")
+        feedbackCorrect=count == links.count
+        feedback="\(count)/\(links.count) connections matched.\n\n"+links.map { "\($0.term) → \($0.cue)\n\($0.why)" }.joined(separator:"\n\n")
         validation=nil
     }
     func hideStory() {
-        let missing=content.storyTerms.filter { !Answer.contains(story,term:$0) }
+        let missing=storyTerms.filter { !Answer.contains(story,term:$0) }
         guard story.trimmingCharacters(in:.whitespacesAndNewlines).count >= 30, missing.isEmpty else {
-            validation="Build a short story using all four terms. Still needed: \(missing.joined(separator:", "))."; return
+            validation="Build a short story using all \(storyTerms.count) terms. Still needed: \(missing.joined(separator:", "))."; return
         }
         beginRecall()
     }
     func checkSequence() {
-        guard order.count == 6, feedback == nil else { return }
-        for (position,selection) in order.enumerated() { record("Operation \(position+1)",answer:content.sequence[selection],expected:content.sequence[position],correct:position == selection,explanation:content.chunks.joined(separator:" → ")) }
-        feedbackCorrect=order == Array(0..<6)
-        feedback="\(zip(order,0..<6).filter { $0 == $1 }.count)/6 operations in position.\n\n"+content.sequence.joined(separator:" → ")+"\n\n"+content.chunks.joined(separator:" → ")
+        guard order.count == currentSequence.count, feedback == nil else { return }
+        feedbackCorrect = order == Array(currentSequence.indices)
+        record("Sequence \(index + 1)", answer: order.map { currentSequence[$0] }.joined(separator: " → "),
+               expected: currentSequence.joined(separator: " → "), correct: feedbackCorrect)
+        feedback = currentSequence.joined(separator: " → ")
     }
+
     func selfRate(_ correct: Bool) {
         guard flipped else { return }
         let concept=deck[index].concept
@@ -104,14 +126,17 @@ struct ReviewConcept {
         guard feedback == nil, canCheck else { return }
         validation=nil
         if stage == "groupRecall" {
-            let terms=content.groups[index], count=terms.filter { Answer.contains(answer,term:$0) }.count
-            feedbackCorrect=count >= 2
-            record(content.categories[index],answer:answer,expected:terms.joined(separator:", "),correct:feedbackCorrect,explanation:"Name at least two members of this category.")
-            feedback="\(content.categories[index]): \(terms.joined(separator:", ")). You needed at least two."
+            let item = groupedTerms[index]
+            let category = content.categories[item.category]
+            feedbackCorrect = Answer.normalise(answer) == Answer.normalise(category)
+            record(item.term, answer: answer, expected: category, correct: feedbackCorrect)
+            feedback = "\(item.term) belongs to \(category)."
         } else if id == 4 {
-            for term in content.storyTerms { record(term,answer:answer,expected:term,correct:Answer.contains(answer,term:term),explanation:content.terms.first { $0.term == term }?.def ?? "") }
-            feedbackCorrect=content.storyTerms.allSatisfy { Answer.contains(answer,term:$0) }
-            feedback="The original concepts were \(content.storyTerms.joined(separator:", ")).\n\nRetrieving keywords does not establish conceptual understanding. Compare their roles with the definitions."
+            let term = storyTerms[index]
+            let concept = content.terms.first { $0.term == term }
+            feedbackCorrect = concept.map { Answer.correct(answer, concept: $0) } ?? false
+            record(term, answer: answer, expected: term, correct: feedbackCorrect)
+            feedback = "\(term) — \(concept?.def ?? "")"
         } else if id == 8 {
             let question=content.robots[index]
             let checks=question.rules.map { ($0.name,$0.matches(answer)) }
@@ -124,7 +149,7 @@ struct ReviewConcept {
             record(question.term,answer:question.opts[choice],expected:question.opts[question.a],correct:feedbackCorrect,explanation:question.why)
             feedback=question.why
         } else if id == 5 {
-            let link=content.links[index]
+            let link=links[index]
             feedbackCorrect=Answer.normalise(answer) == Answer.normalise(link.term) || content.terms.first(where: { $0.term == link.term }).map { Answer.correct(answer,concept:$0) } == true
             record(link.term,answer:answer,expected:link.term,correct:feedbackCorrect,explanation:link.why)
             feedback="\(link.term) — \(link.why)"
@@ -142,12 +167,27 @@ struct ReviewConcept {
         }
     }
     func advance() {
-        if [3,4].contains(id) { finished=true; return }
-        index += 1; feedback=nil; answer=""; choice = -1; hint=false; flipped=false
-        if index >= total {
-            if id == 7 && !retried && !retry.isEmpty { deck=retry; retry=[]; retried=true; index=0 }
-            else { finished=true }
+        guard !finished else { return }
+        if index + 1 >= total {
+            if id == 7 && !retried && !retry.isEmpty {
+                index = 0
+                deck = retry
+                retry = []
+                retried = true
+            } else {
+                // Keep the last question valid while its view leaves the hierarchy.
+                finished = true
+                return
+            }
+        } else {
+            index += 1
         }
+        order = []
+        feedback = nil
+        answer = ""
+        choice = -1
+        hint = false
+        flipped = false
     }
     func finish(store: ProgressStore) -> ChallengeAttempt? {
         guard finished else { return nil }
